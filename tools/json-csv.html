@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON ↔ CSV Converter - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block">← Retour</a>
+        <h1 class="text-4xl font-bold mb-2">🔄 JSON ↔ CSV Converter</h1>
+        <p class="text-gray-400 mb-8">Convertit entre JSON et CSV</p>
+
+        <div class="flex gap-2 mb-6">
+            <button onclick="setMode('json2csv')" id="btn-json2csv" class="flex-1 py-3 px-6 rounded-lg font-semibold transition-colors bg-blue-600">JSON → CSV</button>
+            <button onclick="setMode('csv2json')" id="btn-csv2json" class="flex-1 py-3 px-6 rounded-lg font-semibold transition-colors bg-slate-700 hover:bg-slate-600">CSV → JSON</button>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <label class="block text-sm font-medium mb-2" id="input-label">JSON (tableau d'objets)</label>
+                <textarea id="input" rows="15" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white font-mono text-sm focus:border-blue-500 focus:outline-none" placeholder='[{"name": "John", "age": 30}]'></textarea>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <label class="block text-sm font-medium mb-2" id="output-label">CSV</label>
+                <textarea id="output" rows="15" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white font-mono text-sm" readonly></textarea>
+            </div>
+        </div>
+
+        <div class="flex gap-4 mt-6">
+            <button onclick="convert()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">Convertir</button>
+            <button onclick="copyResult()" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">📋 Copier</button>
+            <button onclick="downloadResult()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">📥 Télécharger</button>
+        </div>
+    </div>
+
+    <script>
+        let mode = 'json2csv';
+
+        function setMode(m) {
+            mode = m;
+            document.getElementById('btn-json2csv').className = `flex-1 py-3 px-6 rounded-lg font-semibold transition-colors ${m === 'json2csv' ? 'bg-blue-600' : 'bg-slate-700 hover:bg-slate-600'}`;
+            document.getElementById('btn-csv2json').className = `flex-1 py-3 px-6 rounded-lg font-semibold transition-colors ${m === 'csv2json' ? 'bg-blue-600' : 'bg-slate-700 hover:bg-slate-600'}`;
+            document.getElementById('input-label').textContent = m === 'json2csv' ? "JSON (tableau d'objets)" : 'CSV';
+            document.getElementById('output-label').textContent = m === 'json2csv' ? 'CSV' : 'JSON';
+            document.getElementById('input').placeholder = m === 'json2csv' ? '[{"name": "John", "age": 30}]' : 'name,age\nJohn,30';
+        }
+
+        function convert() {
+            const input = document.getElementById('input').value.trim();
+            if (!input) return;
+            try {
+                if (mode === 'json2csv') {
+                    const json = JSON.parse(input);
+                    if (!Array.isArray(json)) throw new Error('Le JSON doit être un tableau');
+                    const headers = [...new Set(json.flatMap(obj => Object.keys(obj)))];
+                    const csv = [headers.join(','), ...json.map(obj => headers.map(h => {
+                        const val = obj[h] ?? '';
+                        return typeof val === 'string' && val.includes(',') ? `"${val}"` : val;
+                    }).join(','))].join('\n');
+                    document.getElementById('output').value = csv;
+                } else {
+                    const lines = input.split('\n').filter(l => l.trim());
+                    const headers = lines[0].split(',').map(h => h.trim());
+                    const json = lines.slice(1).map(line => {
+                        const values = line.split(',');
+                        return headers.reduce((obj, h, i) => ({ ...obj, [h]: values[i]?.trim() ?? '' }), {});
+                    });
+                    document.getElementById('output').value = JSON.stringify(json, null, 2);
+                }
+            } catch (e) {
+                document.getElementById('output').value = 'Erreur: ' + e.message;
+            }
+        }
+
+        function copyResult() {
+            navigator.clipboard.writeText(document.getElementById('output').value);
+        }
+
+        function downloadResult() {
+            const content = document.getElementById('output').value;
+            const ext = mode === 'json2csv' ? 'csv' : 'json';
+            const blob = new Blob([content], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.download = `converted.${ext}`;
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        }
+    </script>
+</body>
+</html>
+

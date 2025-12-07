@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-2 inline-block">← Retour</a>
+                <h1 class="text-4xl font-bold">📋 Kanban Board</h1>
+            </div>
+            <button onclick="clearAll()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm">🗑 Tout effacer</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="board">
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700" data-column="todo">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><span class="w-3 h-3 bg-yellow-500 rounded-full"></span>À faire <span class="text-gray-500 text-sm" id="count-todo">(0)</span></h2>
+                <div id="todo" class="space-y-3 min-h-[200px]" ondragover="allowDrop(event)" ondrop="drop(event, 'todo')"></div>
+                <button onclick="addTask('todo')" class="w-full mt-4 py-2 border-2 border-dashed border-slate-600 rounded-lg text-gray-400 hover:border-blue-500 hover:text-blue-400">+ Ajouter une tâche</button>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700" data-column="doing">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><span class="w-3 h-3 bg-blue-500 rounded-full"></span>En cours <span class="text-gray-500 text-sm" id="count-doing">(0)</span></h2>
+                <div id="doing" class="space-y-3 min-h-[200px]" ondragover="allowDrop(event)" ondrop="drop(event, 'doing')"></div>
+                <button onclick="addTask('doing')" class="w-full mt-4 py-2 border-2 border-dashed border-slate-600 rounded-lg text-gray-400 hover:border-blue-500 hover:text-blue-400">+ Ajouter une tâche</button>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700" data-column="done">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><span class="w-3 h-3 bg-green-500 rounded-full"></span>Terminé <span class="text-gray-500 text-sm" id="count-done">(0)</span></h2>
+                <div id="done" class="space-y-3 min-h-[200px]" ondragover="allowDrop(event)" ondrop="drop(event, 'done')"></div>
+                <button onclick="addTask('done')" class="w-full mt-4 py-2 border-2 border-dashed border-slate-600 rounded-lg text-gray-400 hover:border-blue-500 hover:text-blue-400">+ Ajouter une tâche</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tasks = JSON.parse(localStorage.getItem('kanban-tasks')) || { todo: [], doing: [], done: [] };
+        let draggedId = null;
+
+        function save() { localStorage.setItem('kanban-tasks', JSON.stringify(tasks)); }
+
+        function render() {
+            ['todo', 'doing', 'done'].forEach(col => {
+                document.getElementById(col).innerHTML = tasks[col].map(task => `
+                    <div class="bg-slate-700 rounded-lg p-3 cursor-move hover:bg-slate-600 transition-colors" draggable="true" ondragstart="dragStart(event, '${task.id}')" data-id="${task.id}">
+                        <div class="flex justify-between items-start gap-2">
+                            <span class="flex-1" id="text-${task.id}">${task.text}</span>
+                            <div class="flex gap-1">
+                                <button onclick="editTask('${task.id}')" class="text-gray-400 hover:text-white text-sm">✏️</button>
+                                <button onclick="deleteTask('${task.id}', '${col}')" class="text-gray-400 hover:text-red-400 text-sm">✕</button>
+                            </div>
+                        </div>
+                        ${task.label ? `<span class="inline-block mt-2 px-2 py-0.5 rounded text-xs ${getLabelColor(task.label)}">${task.label}</span>` : ''}
+                    </div>
+                `).join('');
+                document.getElementById(`count-${col}`).textContent = `(${tasks[col].length})`;
+            });
+        }
+
+        function getLabelColor(label) {
+            const colors = { 'urgent': 'bg-red-600', 'bug': 'bg-orange-600', 'feature': 'bg-blue-600', 'design': 'bg-purple-600' };
+            return colors[label] || 'bg-gray-600';
+        }
+
+        function addTask(column) {
+            const text = prompt('Nom de la tâche:');
+            if (!text) return;
+            const label = prompt('Label (optionnel: urgent, bug, feature, design):') || '';
+            tasks[column].push({ id: Date.now().toString(), text, label });
+            save(); render();
+        }
+
+        function editTask(id) {
+            for (const col of ['todo', 'doing', 'done']) {
+                const task = tasks[col].find(t => t.id === id);
+                if (task) {
+                    const text = prompt('Modifier la tâche:', task.text);
+                    if (text) { task.text = text; save(); render(); }
+                    return;
+                }
+            }
+        }
+
+        function deleteTask(id, column) {
+            tasks[column] = tasks[column].filter(t => t.id !== id);
+            save(); render();
+        }
+
+        function dragStart(e, id) { draggedId = id; e.dataTransfer.effectAllowed = 'move'; }
+        function allowDrop(e) { e.preventDefault(); }
+
+        function drop(e, targetColumn) {
+            e.preventDefault();
+            for (const col of ['todo', 'doing', 'done']) {
+                const index = tasks[col].findIndex(t => t.id === draggedId);
+                if (index !== -1) {
+                    const [task] = tasks[col].splice(index, 1);
+                    tasks[targetColumn].push(task);
+                    save(); render();
+                    return;
+                }
+            }
+        }
+
+        function clearAll() {
+            if (confirm('Effacer toutes les tâches ?')) {
+                tasks = { todo: [], doing: [], done: [] };
+                save(); render();
+            }
+        }
+
+        render();
+    </script>
+</body>
+</html>
+

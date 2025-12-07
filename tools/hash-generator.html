@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hash Generator - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block">← Retour</a>
+        <h1 class="text-4xl font-bold mb-2">🔒 Hash Generator</h1>
+        <p class="text-gray-400 mb-8">Générez des hash MD5, SHA-1, SHA-256, SHA-512</p>
+
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 mb-6">
+            <label class="block text-sm font-medium mb-2">Texte à hasher</label>
+            <textarea id="input" rows="4" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white font-mono focus:border-blue-500 focus:outline-none" placeholder="Entrez votre texte ici..." oninput="generateHashes()"></textarea>
+        </div>
+
+        <div class="space-y-4" id="results">
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-400">MD5 (128 bits)</span>
+                    <button onclick="copy('md5')" class="text-blue-400 hover:text-blue-300 text-sm">📋 Copier</button>
+                </div>
+                <div id="md5" class="font-mono text-sm break-all text-green-400">-</div>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-400">SHA-1 (160 bits)</span>
+                    <button onclick="copy('sha1')" class="text-blue-400 hover:text-blue-300 text-sm">📋 Copier</button>
+                </div>
+                <div id="sha1" class="font-mono text-sm break-all text-green-400">-</div>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-400">SHA-256 (256 bits) ⭐</span>
+                    <button onclick="copy('sha256')" class="text-blue-400 hover:text-blue-300 text-sm">📋 Copier</button>
+                </div>
+                <div id="sha256" class="font-mono text-sm break-all text-green-400">-</div>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-400">SHA-512 (512 bits)</span>
+                    <button onclick="copy('sha512')" class="text-blue-400 hover:text-blue-300 text-sm">📋 Copier</button>
+                </div>
+                <div id="sha512" class="font-mono text-sm break-all text-green-400">-</div>
+            </div>
+        </div>
+
+        <div class="mt-8 bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h3 class="text-lg font-semibold mb-4">📁 Hash d'un fichier</h3>
+            <input type="file" id="file-input" class="hidden" onchange="hashFile(event)">
+            <button onclick="document.getElementById('file-input').click()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                Sélectionner un fichier
+            </button>
+            <div id="file-result" class="mt-4 hidden">
+                <p class="text-sm text-gray-400 mb-2">SHA-256 du fichier:</p>
+                <div id="file-hash" class="font-mono text-sm break-all text-green-400 bg-slate-700 p-3 rounded-lg"></div>
+                <button onclick="navigator.clipboard.writeText(document.getElementById('file-hash').textContent)" class="mt-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm">📋 Copier</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple MD5 implementation (for demo - in production use a proper library)
+        function md5(string) {
+            function rotateLeft(value, shift) { return (value << shift) | (value >>> (32 - shift)); }
+            function addUnsigned(x, y) { return (x + y) >>> 0; }
+            const k = [];
+            for (let i = 0; i < 64; i++) k[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 0x100000000);
+            const s = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+            let [a0, b0, c0, d0] = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476];
+            const bytes = new TextEncoder().encode(string);
+            const bits = bytes.length * 8;
+            const padding = new Uint8Array(((bytes.length + 8) >>> 6 << 6) + 64);
+            padding.set(bytes); padding[bytes.length] = 0x80;
+            new DataView(padding.buffer).setUint32(padding.length - 8, bits, true);
+            for (let i = 0; i < padding.length; i += 64) {
+                const M = new Uint32Array(16);
+                for (let j = 0; j < 16; j++) M[j] = new DataView(padding.buffer).getUint32(i + j * 4, true);
+                let [A, B, C, D] = [a0, b0, c0, d0];
+                for (let j = 0; j < 64; j++) {
+                    let F, g;
+                    if (j < 16) { F = (B & C) | (~B & D); g = j; }
+                    else if (j < 32) { F = (D & B) | (~D & C); g = (5 * j + 1) % 16; }
+                    else if (j < 48) { F = B ^ C ^ D; g = (3 * j + 5) % 16; }
+                    else { F = C ^ (B | ~D); g = (7 * j) % 16; }
+                    F = addUnsigned(addUnsigned(addUnsigned(F, A), addUnsigned(k[j], M[g])));
+                    A = D; D = C; C = B; B = addUnsigned(B, rotateLeft(F, s[j]));
+                }
+                a0 = addUnsigned(a0, A); b0 = addUnsigned(b0, B); c0 = addUnsigned(c0, C); d0 = addUnsigned(d0, D);
+            }
+            return [a0, b0, c0, d0].map(v => v.toString(16).padStart(8, '0').match(/../g).reverse().join('')).join('');
+        }
+
+        async function sha(algo, data) {
+            const hashBuffer = await crypto.subtle.digest(algo, new TextEncoder().encode(data));
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function generateHashes() {
+            const input = document.getElementById('input').value;
+            if (!input) { ['md5', 'sha1', 'sha256', 'sha512'].forEach(id => document.getElementById(id).textContent = '-'); return; }
+            document.getElementById('md5').textContent = md5(input);
+            document.getElementById('sha1').textContent = await sha('SHA-1', input);
+            document.getElementById('sha256').textContent = await sha('SHA-256', input);
+            document.getElementById('sha512').textContent = await sha('SHA-512', input);
+        }
+
+        async function hashFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const buffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+            document.getElementById('file-hash').textContent = hash;
+            document.getElementById('file-result').classList.remove('hidden');
+        }
+
+        function copy(id) { navigator.clipboard.writeText(document.getElementById(id).textContent); }
+    </script>
+</body>
+</html>
+

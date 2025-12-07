@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diff de texte - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8">
+        <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block">← Retour</a>
+        <h1 class="text-4xl font-bold mb-2">📝 Diff de texte</h1>
+        <p class="text-gray-400 mb-8">Compare deux textes et affiche les différences</p>
+
+        <div class="grid md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <label class="block text-sm font-medium mb-2">Texte original</label>
+                <textarea id="text1" rows="12" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white font-mono text-sm focus:border-blue-500 focus:outline-none" placeholder="Collez le premier texte ici..."></textarea>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <label class="block text-sm font-medium mb-2">Texte modifié</label>
+                <textarea id="text2" rows="12" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white font-mono text-sm focus:border-blue-500 focus:outline-none" placeholder="Collez le second texte ici..."></textarea>
+            </div>
+        </div>
+
+        <button onclick="compare()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors mb-6">
+            🔍 Comparer
+        </button>
+
+        <div id="stats" class="hidden grid grid-cols-3 gap-4 mb-6">
+            <div class="bg-green-900/50 border border-green-500/30 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-green-400" id="added">0</div>
+                <div class="text-sm text-gray-400">Ajoutées</div>
+            </div>
+            <div class="bg-red-900/50 border border-red-500/30 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-red-400" id="removed">0</div>
+                <div class="text-sm text-gray-400">Supprimées</div>
+            </div>
+            <div class="bg-slate-700 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-gray-300" id="unchanged">0</div>
+                <div class="text-sm text-gray-400">Inchangées</div>
+            </div>
+        </div>
+
+        <div id="result" class="hidden bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h3 class="text-lg font-semibold mb-4">Résultat</h3>
+            <div id="diff-output" class="font-mono text-sm whitespace-pre-wrap leading-relaxed"></div>
+        </div>
+    </div>
+
+    <script>
+        function compare() {
+            const text1 = document.getElementById('text1').value;
+            const text2 = document.getElementById('text2').value;
+
+            const lines1 = text1.split('\n');
+            const lines2 = text2.split('\n');
+            const maxLines = Math.max(lines1.length, lines2.length);
+
+            let output = '';
+            let added = 0, removed = 0, unchanged = 0;
+
+            // Simple line-by-line diff
+            const diff = [];
+            let i = 0, j = 0;
+
+            while (i < lines1.length || j < lines2.length) {
+                if (i >= lines1.length) {
+                    diff.push({ type: 'add', text: lines2[j] });
+                    added++;
+                    j++;
+                } else if (j >= lines2.length) {
+                    diff.push({ type: 'remove', text: lines1[i] });
+                    removed++;
+                    i++;
+                } else if (lines1[i] === lines2[j]) {
+                    diff.push({ type: 'same', text: lines1[i] });
+                    unchanged++;
+                    i++;
+                    j++;
+                } else {
+                    // Check if line was removed or added
+                    const foundInNew = lines2.slice(j).indexOf(lines1[i]);
+                    const foundInOld = lines1.slice(i).indexOf(lines2[j]);
+
+                    if (foundInNew === -1 || (foundInOld !== -1 && foundInOld < foundInNew)) {
+                        diff.push({ type: 'remove', text: lines1[i] });
+                        removed++;
+                        i++;
+                    } else {
+                        diff.push({ type: 'add', text: lines2[j] });
+                        added++;
+                        j++;
+                    }
+                }
+            }
+
+            output = diff.map(d => {
+                if (d.type === 'add') return `<div class="bg-green-900/30 text-green-300 px-2 py-0.5 border-l-4 border-green-500">+ ${escapeHtml(d.text)}</div>`;
+                if (d.type === 'remove') return `<div class="bg-red-900/30 text-red-300 px-2 py-0.5 border-l-4 border-red-500">- ${escapeHtml(d.text)}</div>`;
+                return `<div class="text-gray-400 px-2 py-0.5 border-l-4 border-slate-600">  ${escapeHtml(d.text)}</div>`;
+            }).join('');
+
+            document.getElementById('diff-output').innerHTML = output || '<div class="text-gray-400">Les textes sont identiques</div>';
+            document.getElementById('added').textContent = added;
+            document.getElementById('removed').textContent = removed;
+            document.getElementById('unchanged').textContent = unchanged;
+            document.getElementById('stats').classList.remove('hidden');
+            document.getElementById('result').classList.remove('hidden');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
+

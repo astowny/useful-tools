@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favicon Generator - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block">← Retour</a>
+        <h1 class="text-4xl font-bold mb-2">⭐ Favicon Generator</h1>
+        <p class="text-gray-400 mb-8">Créez des favicons à partir d'émojis ou de texte</p>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <div class="flex gap-2 mb-6">
+                    <button onclick="setMode('emoji')" id="btn-emoji" class="flex-1 py-2 px-4 rounded-lg font-semibold transition-colors bg-blue-600">Emoji</button>
+                    <button onclick="setMode('text')" id="btn-text" class="flex-1 py-2 px-4 rounded-lg font-semibold transition-colors bg-slate-700">Texte</button>
+                </div>
+
+                <div id="emoji-mode">
+                    <label class="block text-sm font-medium mb-2">Emoji</label>
+                    <input type="text" id="emoji" value="🚀" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-4xl text-center" oninput="generate()" maxlength="2">
+                </div>
+
+                <div id="text-mode" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Texte (1-2 caractères)</label>
+                        <input type="text" id="text" value="AB" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-2xl text-center font-bold" oninput="generate()" maxlength="2">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Couleur texte</label>
+                            <input type="color" id="text-color" value="#ffffff" class="w-full h-10 rounded cursor-pointer" oninput="generate()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Couleur fond</label>
+                            <input type="color" id="bg-color" value="#3b82f6" class="w-full h-10 rounded cursor-pointer" oninput="generate()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="block text-sm font-medium mb-2">Forme du fond</label>
+                    <select id="shape" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3" onchange="generate()">
+                        <option value="none">Aucun</option>
+                        <option value="circle">Cercle</option>
+                        <option value="rounded">Carré arrondi</option>
+                        <option value="square">Carré</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <h3 class="text-lg font-semibold mb-4">Aperçu</h3>
+                <div class="flex items-center justify-center gap-6 mb-6">
+                    <div class="text-center">
+                        <canvas id="preview-64" width="64" height="64" class="border border-slate-600 rounded"></canvas>
+                        <p class="text-xs text-gray-400 mt-1">64x64</p>
+                    </div>
+                    <div class="text-center">
+                        <canvas id="preview-32" width="32" height="32" class="border border-slate-600 rounded"></canvas>
+                        <p class="text-xs text-gray-400 mt-1">32x32</p>
+                    </div>
+                    <div class="text-center">
+                        <canvas id="preview-16" width="16" height="16" class="border border-slate-600 rounded"></canvas>
+                        <p class="text-xs text-gray-400 mt-1">16x16</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <button onclick="download(64)" class="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded-lg">📥 64x64 PNG</button>
+                    <button onclick="download(32)" class="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded-lg">📥 32x32 PNG</button>
+                    <button onclick="download(16)" class="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded-lg">📥 16x16 PNG</button>
+                    <button onclick="downloadICO()" class="w-full bg-green-600 hover:bg-green-700 py-2 rounded-lg">📥 ICO (multi-size)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mode = 'emoji';
+        function setMode(m) {
+            mode = m;
+            document.getElementById('btn-emoji').className = `flex-1 py-2 px-4 rounded-lg font-semibold transition-colors ${m === 'emoji' ? 'bg-blue-600' : 'bg-slate-700'}`;
+            document.getElementById('btn-text').className = `flex-1 py-2 px-4 rounded-lg font-semibold transition-colors ${m === 'text' ? 'bg-blue-600' : 'bg-slate-700'}`;
+            document.getElementById('emoji-mode').classList.toggle('hidden', m !== 'emoji');
+            document.getElementById('text-mode').classList.toggle('hidden', m !== 'text');
+            generate();
+        }
+
+        function drawFavicon(ctx, size) {
+            ctx.clearRect(0, 0, size, size);
+            const shape = document.getElementById('shape').value;
+            const bgColor = document.getElementById('bg-color').value;
+
+            if (shape !== 'none' && mode === 'text') {
+                ctx.fillStyle = bgColor;
+                if (shape === 'circle') { ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2); ctx.fill(); }
+                else if (shape === 'rounded') { ctx.beginPath(); ctx.roundRect(0, 0, size, size, size * 0.2); ctx.fill(); }
+                else { ctx.fillRect(0, 0, size, size); }
+            }
+
+            if (mode === 'emoji') {
+                const emoji = document.getElementById('emoji').value;
+                ctx.font = `${size * 0.8}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(emoji, size/2, size/2 + size*0.05);
+            } else {
+                const text = document.getElementById('text').value;
+                ctx.fillStyle = document.getElementById('text-color').value;
+                ctx.font = `bold ${size * (text.length > 1 ? 0.5 : 0.7)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, size/2, size/2 + size*0.05);
+            }
+        }
+
+        function generate() {
+            [64, 32, 16].forEach(size => {
+                const canvas = document.getElementById(`preview-${size}`);
+                drawFavicon(canvas.getContext('2d'), size);
+            });
+        }
+
+        function download(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = size;
+            drawFavicon(canvas.getContext('2d'), size);
+            const link = document.createElement('a');
+            link.download = `favicon-${size}x${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function downloadICO() { download(32); } // Simplified - just download 32x32
+        generate();
+    </script>
+</body>
+</html>
+

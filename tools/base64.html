@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Encoder/Decoder - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block">← Retour</a>
+        <h1 class="text-4xl font-bold mb-2">🔤 Base64 Encoder/Decoder</h1>
+        <p class="text-gray-400 mb-8">Encode et décode du texte en Base64</p>
+
+        <div class="flex gap-2 mb-6">
+            <button onclick="setMode('encode')" id="btn-encode" class="flex-1 py-3 px-6 rounded-lg font-semibold transition-colors bg-blue-600">Encoder</button>
+            <button onclick="setMode('decode')" id="btn-decode" class="flex-1 py-3 px-6 rounded-lg font-semibold transition-colors bg-slate-700 hover:bg-slate-600">Décoder</button>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <label class="block text-sm font-medium mb-2" id="input-label">Texte original</label>
+                <textarea id="input" rows="10" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white font-mono text-sm focus:border-blue-500 focus:outline-none" placeholder="Entrez votre texte ici..." oninput="convert()"></textarea>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <label class="block text-sm font-medium mb-2" id="output-label">Base64</label>
+                <textarea id="output" rows="10" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white font-mono text-sm" readonly></textarea>
+            </div>
+        </div>
+
+        <div class="flex gap-4 mt-6">
+            <button onclick="copyResult()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">📋 Copier le résultat</button>
+            <button onclick="clearAll()" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">🗑️ Effacer</button>
+        </div>
+
+        <div class="mt-8 bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h2 class="text-xl font-bold mb-4">📁 Encoder un fichier</h2>
+            <input type="file" id="file-input" class="hidden" onchange="encodeFile(event)">
+            <button onclick="document.getElementById('file-input').click()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                Sélectionner un fichier
+            </button>
+            <div id="file-result" class="mt-4 hidden">
+                <label class="block text-sm font-medium mb-2">Base64 du fichier</label>
+                <textarea id="file-output" rows="4" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white font-mono text-xs" readonly></textarea>
+                <button onclick="navigator.clipboard.writeText(document.getElementById('file-output').value)" class="mt-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm">📋 Copier</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mode = 'encode';
+
+        function setMode(m) {
+            mode = m;
+            document.getElementById('btn-encode').className = `flex-1 py-3 px-6 rounded-lg font-semibold transition-colors ${m === 'encode' ? 'bg-blue-600' : 'bg-slate-700 hover:bg-slate-600'}`;
+            document.getElementById('btn-decode').className = `flex-1 py-3 px-6 rounded-lg font-semibold transition-colors ${m === 'decode' ? 'bg-blue-600' : 'bg-slate-700 hover:bg-slate-600'}`;
+            document.getElementById('input-label').textContent = m === 'encode' ? 'Texte original' : 'Base64';
+            document.getElementById('output-label').textContent = m === 'encode' ? 'Base64' : 'Texte décodé';
+            convert();
+        }
+
+        function convert() {
+            const input = document.getElementById('input').value;
+            try {
+                if (mode === 'encode') {
+                    document.getElementById('output').value = btoa(unescape(encodeURIComponent(input)));
+                } else {
+                    document.getElementById('output').value = decodeURIComponent(escape(atob(input)));
+                }
+            } catch (e) {
+                document.getElementById('output').value = 'Erreur: Entrée invalide';
+            }
+        }
+
+        function copyResult() {
+            navigator.clipboard.writeText(document.getElementById('output').value);
+        }
+
+        function clearAll() {
+            document.getElementById('input').value = '';
+            document.getElementById('output').value = '';
+        }
+
+        function encodeFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('file-output').value = e.target.result;
+                document.getElementById('file-result').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>
+

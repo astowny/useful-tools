@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Box-shadow Generator - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block">← Retour</a>
+        <h1 class="text-4xl font-bold mb-2">🖼️ Box-shadow Generator</h1>
+        <p class="text-gray-400 mb-8">Créez des ombres CSS visuellement</p>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Horizontal: <span id="h-value">10</span>px</label>
+                        <input type="range" id="h-offset" min="-100" max="100" value="10" class="w-full accent-blue-500" oninput="update()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Vertical: <span id="v-value">10</span>px</label>
+                        <input type="range" id="v-offset" min="-100" max="100" value="10" class="w-full accent-blue-500" oninput="update()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Blur: <span id="blur-value">20</span>px</label>
+                        <input type="range" id="blur" min="0" max="100" value="20" class="w-full accent-blue-500" oninput="update()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Spread: <span id="spread-value">0</span>px</label>
+                        <input type="range" id="spread" min="-50" max="50" value="0" class="w-full accent-blue-500" oninput="update()">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Couleur</label>
+                            <input type="color" id="color" value="#000000" class="w-full h-10 rounded cursor-pointer bg-slate-700 border border-slate-600" oninput="update()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Opacité: <span id="opacity-value">25</span>%</label>
+                            <input type="range" id="opacity" min="0" max="100" value="25" class="w-full accent-blue-500" oninput="update()">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="inset" class="w-5 h-5 accent-blue-500" onchange="update()">
+                        <label for="inset">Inset (ombre intérieure)</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 flex items-center justify-center min-h-[300px]">
+                <div id="preview" class="w-40 h-40 bg-white rounded-xl"></div>
+            </div>
+        </div>
+
+        <div class="mt-6 bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h3 class="text-lg font-semibold mb-4">Code CSS</h3>
+            <pre id="css-output" class="bg-slate-700 rounded-lg p-4 text-sm font-mono text-green-400"></pre>
+            <button onclick="copyCSS()" class="mt-4 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">📋 Copier</button>
+        </div>
+
+        <div class="mt-6 bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h3 class="text-lg font-semibold mb-4">Presets</h3>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="applyPreset(5,5,10,0,'#000000',20,false)" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">Subtle</button>
+                <button onclick="applyPreset(0,10,30,0,'#000000',30,false)" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">Elevation</button>
+                <button onclick="applyPreset(0,0,40,10,'#3b82f6',40,false)" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">Glow</button>
+                <button onclick="applyPreset(0,0,0,3,'#000000',100,false)" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">Border</button>
+                <button onclick="applyPreset(0,0,20,0,'#000000',30,true)" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">Inset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+        }
+
+        function update() {
+            const h = document.getElementById('h-offset').value;
+            const v = document.getElementById('v-offset').value;
+            const blur = document.getElementById('blur').value;
+            const spread = document.getElementById('spread').value;
+            const color = document.getElementById('color').value;
+            const opacity = document.getElementById('opacity').value;
+            const inset = document.getElementById('inset').checked;
+
+            document.getElementById('h-value').textContent = h;
+            document.getElementById('v-value').textContent = v;
+            document.getElementById('blur-value').textContent = blur;
+            document.getElementById('spread-value').textContent = spread;
+            document.getElementById('opacity-value').textContent = opacity;
+
+            const rgb = hexToRgb(color);
+            const rgba = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity / 100})`;
+            const shadow = `${inset ? 'inset ' : ''}${h}px ${v}px ${blur}px ${spread}px ${rgba}`;
+
+            document.getElementById('preview').style.boxShadow = shadow;
+            document.getElementById('css-output').textContent = `box-shadow: ${shadow};`;
+        }
+
+        function applyPreset(h, v, blur, spread, color, opacity, inset) {
+            document.getElementById('h-offset').value = h;
+            document.getElementById('v-offset').value = v;
+            document.getElementById('blur').value = blur;
+            document.getElementById('spread').value = spread;
+            document.getElementById('color').value = color;
+            document.getElementById('opacity').value = opacity;
+            document.getElementById('inset').checked = inset;
+            update();
+        }
+
+        function copyCSS() { navigator.clipboard.writeText(document.getElementById('css-output').textContent); }
+        update();
+    </script>
+</body>
+</html>
+

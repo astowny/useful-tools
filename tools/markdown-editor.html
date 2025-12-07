@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>.preview h1{font-size:2em;font-weight:bold;margin:0.5em 0}.preview h2{font-size:1.5em;font-weight:bold;margin:0.5em 0}.preview h3{font-size:1.25em;font-weight:bold}.preview p{margin:0.5em 0}.preview ul,.preview ol{margin:0.5em 0;padding-left:1.5em}.preview li{margin:0.25em 0}.preview code{background:#374151;padding:0.2em 0.4em;border-radius:0.25em;font-size:0.9em}.preview pre{background:#374151;padding:1em;border-radius:0.5em;overflow-x:auto}.preview pre code{background:none;padding:0}.preview blockquote{border-left:4px solid #3b82f6;padding-left:1em;margin:0.5em 0;color:#9ca3af}.preview a{color:#3b82f6;text-decoration:underline}.preview table{border-collapse:collapse;margin:0.5em 0}.preview th,.preview td{border:1px solid #4b5563;padding:0.5em}.preview hr{border:none;border-top:1px solid #4b5563;margin:1em 0}</style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-2 inline-block">← Retour</a>
+                <h1 class="text-4xl font-bold">✍️ Markdown Editor</h1>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="downloadMD()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm">📥 .md</button>
+                <button onclick="downloadHTML()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm">📥 .html</button>
+                <button onclick="copyHTML()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm">📋 Copier HTML</button>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6 h-[calc(100vh-200px)]">
+            <div class="bg-slate-800 rounded-xl border border-slate-700 flex flex-col">
+                <div class="flex items-center gap-2 p-3 border-b border-slate-700">
+                    <button onclick="insert('**', '**')" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 font-bold">B</button>
+                    <button onclick="insert('*', '*')" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 italic">I</button>
+                    <button onclick="insert('~~', '~~')" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 line-through">S</button>
+                    <button onclick="insert('`', '`')" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 font-mono">&lt;/&gt;</button>
+                    <button onclick="insert('[', '](url)')" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600">🔗</button>
+                    <button onclick="insertLine('# ')" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600">H1</button>
+                    <button onclick="insertLine('## ')" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600">H2</button>
+                    <button onclick="insertLine('- ')" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600">•</button>
+                    <button onclick="insertLine('> ')" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600">"</button>
+                </div>
+                <textarea id="editor" class="flex-1 bg-transparent p-4 text-white font-mono text-sm resize-none focus:outline-none" placeholder="Écrivez votre Markdown ici..." oninput="render()"></textarea>
+            </div>
+            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                <div class="p-3 border-b border-slate-700 text-sm text-gray-400">Aperçu</div>
+                <div id="preview" class="preview p-4 overflow-y-auto h-[calc(100%-45px)] prose prose-invert max-w-none"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+
+        // Load saved content
+        editor.value = localStorage.getItem('markdown-content') || `# Bienvenue dans l'éditeur Markdown
+
+Ceci est un **éditeur Markdown** avec aperçu en temps réel.
+
+## Fonctionnalités
+
+- **Gras** et *italique*
+- ~~Barré~~
+- \`Code inline\`
+- [Liens](https://example.com)
+
+### Liste de tâches
+
+- [ ] Tâche à faire
+- [x] Tâche terminée
+
+> Citation
+
+\`\`\`javascript
+const hello = "world";
+console.log(hello);
+\`\`\`
+
+| Colonne 1 | Colonne 2 |
+|-----------|-----------|
+| Cellule 1 | Cellule 2 |
+`;
+
+        function render() {
+            preview.innerHTML = marked.parse(editor.value);
+            localStorage.setItem('markdown-content', editor.value);
+        }
+
+        function insert(before, after) {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const text = editor.value;
+            const selected = text.substring(start, end) || 'texte';
+            editor.value = text.substring(0, start) + before + selected + after + text.substring(end);
+            editor.focus();
+            editor.setSelectionRange(start + before.length, start + before.length + selected.length);
+            render();
+        }
+
+        function insertLine(prefix) {
+            const start = editor.selectionStart;
+            const text = editor.value;
+            const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+            editor.value = text.substring(0, lineStart) + prefix + text.substring(lineStart);
+            editor.focus();
+            render();
+        }
+
+        function downloadMD() {
+            const blob = new Blob([editor.value], { type: 'text/markdown' });
+            const link = document.createElement('a');
+            link.download = 'document.md';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        }
+
+        function downloadHTML() {
+            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Document</title><style>body{font-family:system-ui;max-width:800px;margin:2em auto;padding:0 1em;line-height:1.6}code{background:#f0f0f0;padding:0.2em 0.4em;border-radius:3px}pre{background:#f0f0f0;padding:1em;border-radius:5px;overflow-x:auto}</style></head><body>${preview.innerHTML}</body></html>`;
+            const blob = new Blob([html], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.download = 'document.html';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        }
+
+        function copyHTML() {
+            navigator.clipboard.writeText(preview.innerHTML);
+        }
+
+        render();
+    </script>
+</body>
+</html>
+

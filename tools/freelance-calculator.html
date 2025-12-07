@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur Freelance - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block">← Retour</a>
+        <h1 class="text-4xl font-bold mb-2">💼 Calculateur Freelance</h1>
+        <p class="text-gray-400 mb-8">Calculez votre TJM et vos revenus nets</p>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <h3 class="text-lg font-semibold mb-4">💰 Objectifs de revenus</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Salaire net mensuel souhaité (€)</label>
+                        <input type="number" id="target-net" value="4000" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Charges mensuelles (€)</label>
+                        <input type="number" id="expenses" value="500" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3" oninput="calculate()">
+                    </div>
+                </div>
+
+                <h3 class="text-lg font-semibold mb-4 mt-6">📅 Temps de travail</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Jours travaillés par semaine</label>
+                        <input type="number" id="days-week" value="5" min="1" max="7" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Semaines de congés par an</label>
+                        <input type="number" id="holidays" value="5" min="0" max="52" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Taux d'occupation (%)</label>
+                        <input type="range" id="occupation" value="80" min="50" max="100" class="w-full accent-blue-500" oninput="calculate()">
+                        <div class="text-center text-sm text-gray-400"><span id="occupation-value">80</span>%</div>
+                    </div>
+                </div>
+
+                <h3 class="text-lg font-semibold mb-4 mt-6">🏛️ Statut</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Régime</label>
+                        <select id="regime" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3" onchange="calculate()">
+                            <option value="micro">Micro-entreprise</option>
+                            <option value="eurl">EURL/SASU (IS)</option>
+                            <option value="portage">Portage salarial</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-gradient-to-br from-blue-900 to-blue-800 rounded-xl p-6 border border-blue-700">
+                    <h3 class="text-lg font-semibold mb-4">📊 TJM Recommandé</h3>
+                    <div class="text-5xl font-bold text-blue-300 mb-2" id="tjm">0€</div>
+                    <div class="text-gray-300">Taux Journalier Moyen</div>
+                </div>
+
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                    <h3 class="text-lg font-semibold mb-4">📈 Détails annuels</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between"><span class="text-gray-400">Jours facturables</span><span id="billable-days">0</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">CA annuel brut</span><span id="ca-brut" class="text-green-400">0€</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Charges sociales (~<span id="charge-rate">22</span>%)</span><span id="charges" class="text-red-400">0€</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Charges pro annuelles</span><span id="pro-expenses" class="text-red-400">0€</span></div>
+                        <hr class="border-slate-600">
+                        <div class="flex justify-between font-semibold"><span>Revenu net annuel</span><span id="net-annual" class="text-green-400">0€</span></div>
+                        <div class="flex justify-between font-semibold"><span>Revenu net mensuel</span><span id="net-monthly" class="text-green-400">0€</span></div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                    <h3 class="text-lg font-semibold mb-4">💡 Équivalences</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-400">Taux horaire (8h)</span><span id="hourly">0€/h</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Salaire brut équivalent</span><span id="salary-equiv">0€</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chargeRates = { micro: 0.22, eurl: 0.45, portage: 0.50 };
+
+        function calculate() {
+            const targetNet = parseFloat(document.getElementById('target-net').value) || 0;
+            const expenses = parseFloat(document.getElementById('expenses').value) || 0;
+            const daysWeek = parseFloat(document.getElementById('days-week').value) || 5;
+            const holidays = parseFloat(document.getElementById('holidays').value) || 5;
+            const occupation = parseFloat(document.getElementById('occupation').value) / 100;
+            const regime = document.getElementById('regime').value;
+            const chargeRate = chargeRates[regime];
+
+            document.getElementById('occupation-value').textContent = Math.round(occupation * 100);
+            document.getElementById('charge-rate').textContent = Math.round(chargeRate * 100);
+
+            const weeksYear = 52 - holidays;
+            const daysYear = weeksYear * daysWeek;
+            const billableDays = Math.round(daysYear * occupation);
+            const targetAnnual = (targetNet * 12) + (expenses * 12);
+            const caBrut = targetAnnual / (1 - chargeRate);
+            const tjm = Math.ceil(caBrut / billableDays);
+            const charges = caBrut * chargeRate;
+            const netAnnual = caBrut - charges - (expenses * 12);
+
+            document.getElementById('billable-days').textContent = billableDays + ' jours';
+            document.getElementById('tjm').textContent = tjm + '€';
+            document.getElementById('ca-brut').textContent = Math.round(caBrut).toLocaleString() + '€';
+            document.getElementById('charges').textContent = '-' + Math.round(charges).toLocaleString() + '€';
+            document.getElementById('pro-expenses').textContent = '-' + Math.round(expenses * 12).toLocaleString() + '€';
+            document.getElementById('net-annual').textContent = Math.round(netAnnual).toLocaleString() + '€';
+            document.getElementById('net-monthly').textContent = Math.round(netAnnual / 12).toLocaleString() + '€';
+            document.getElementById('hourly').textContent = Math.round(tjm / 8) + '€/h';
+            document.getElementById('salary-equiv').textContent = Math.round(netAnnual / 12 * 1.5).toLocaleString() + '€ brut';
+        }
+
+        calculate();
+    </script>
+</body>
+</html>
+

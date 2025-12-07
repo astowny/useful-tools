@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-lg">
+        <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block">← Retour</a>
+        <h1 class="text-4xl font-bold mb-2">🍅 Pomodoro Timer</h1>
+        <p class="text-gray-400 mb-8">Technique de productivité 25/5 minutes</p>
+
+        <div class="bg-slate-800 rounded-xl p-8 border border-slate-700 text-center">
+            <div class="flex justify-center gap-2 mb-8">
+                <button onclick="setMode('work')" id="btn-work" class="px-6 py-2 rounded-lg font-semibold transition-colors bg-red-600">Travail</button>
+                <button onclick="setMode('short')" id="btn-short" class="px-6 py-2 rounded-lg font-semibold transition-colors bg-slate-700">Pause courte</button>
+                <button onclick="setMode('long')" id="btn-long" class="px-6 py-2 rounded-lg font-semibold transition-colors bg-slate-700">Pause longue</button>
+            </div>
+
+            <div id="timer" class="text-8xl font-bold font-mono mb-8">25:00</div>
+
+            <div class="flex justify-center gap-4 mb-8">
+                <button onclick="toggleTimer()" id="btn-start" class="px-8 py-4 rounded-xl font-bold text-xl transition-colors bg-green-600 hover:bg-green-700">▶ Démarrer</button>
+                <button onclick="resetTimer()" class="px-8 py-4 rounded-xl font-bold text-xl transition-colors bg-slate-600 hover:bg-slate-500">↺ Reset</button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div class="bg-slate-700 rounded-lg p-4">
+                    <div class="text-3xl font-bold text-red-400" id="pomodoros">0</div>
+                    <div class="text-sm text-gray-400">Pomodoros</div>
+                </div>
+                <div class="bg-slate-700 rounded-lg p-4">
+                    <div class="text-3xl font-bold text-green-400" id="total-time">0</div>
+                    <div class="text-sm text-gray-400">Minutes</div>
+                </div>
+                <div class="bg-slate-700 rounded-lg p-4">
+                    <div class="text-3xl font-bold text-blue-400" id="streak">0</div>
+                    <div class="text-sm text-gray-400">Série</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h3 class="text-lg font-semibold mb-4">⚙️ Paramètres</h3>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Travail (min)</label>
+                    <input type="number" id="work-time" value="25" min="1" max="60" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-2 text-center" onchange="updateSettings()">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Pause courte</label>
+                    <input type="number" id="short-time" value="5" min="1" max="30" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-2 text-center" onchange="updateSettings()">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Pause longue</label>
+                    <input type="number" id="long-time" value="15" min="1" max="60" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-2 text-center" onchange="updateSettings()">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mode = 'work', isRunning = false, timeLeft = 25 * 60, interval = null;
+        let stats = JSON.parse(localStorage.getItem('pomodoro-stats')) || { pomodoros: 0, totalMinutes: 0, streak: 0, lastDate: null };
+        const times = { work: 25, short: 5, long: 15 };
+
+        function updateDisplay() {
+            const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const secs = (timeLeft % 60).toString().padStart(2, '0');
+            document.getElementById('timer').textContent = `${mins}:${secs}`;
+            document.title = `${mins}:${secs} - Pomodoro`;
+        }
+
+        function setMode(m) {
+            mode = m;
+            timeLeft = times[m] * 60;
+            updateDisplay();
+            ['work', 'short', 'long'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                btn.className = `px-6 py-2 rounded-lg font-semibold transition-colors ${t === m ? (t === 'work' ? 'bg-red-600' : 'bg-green-600') : 'bg-slate-700'}`;
+            });
+        }
+
+        function toggleTimer() {
+            isRunning = !isRunning;
+            document.getElementById('btn-start').innerHTML = isRunning ? '⏸ Pause' : '▶ Démarrer';
+            document.getElementById('btn-start').className = `px-8 py-4 rounded-xl font-bold text-xl transition-colors ${isRunning ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700'}`;
+            
+            if (isRunning) {
+                interval = setInterval(() => {
+                    timeLeft--;
+                    updateDisplay();
+                    if (timeLeft <= 0) {
+                        clearInterval(interval);
+                        isRunning = false;
+                        if (mode === 'work') {
+                            stats.pomodoros++;
+                            stats.totalMinutes += times.work;
+                            const today = new Date().toDateString();
+                            stats.streak = stats.lastDate === today ? stats.streak : (stats.lastDate === new Date(Date.now() - 86400000).toDateString() ? stats.streak + 1 : 1);
+                            stats.lastDate = today;
+                            localStorage.setItem('pomodoro-stats', JSON.stringify(stats));
+                            updateStats();
+                            new Notification('🍅 Pomodoro terminé !', { body: 'Temps de pause !' });
+                        }
+                        document.getElementById('btn-start').innerHTML = '▶ Démarrer';
+                        document.getElementById('btn-start').className = 'px-8 py-4 rounded-xl font-bold text-xl transition-colors bg-green-600 hover:bg-green-700';
+                    }
+                }, 1000);
+            } else { clearInterval(interval); }
+        }
+
+        function resetTimer() { clearInterval(interval); isRunning = false; setMode(mode); document.getElementById('btn-start').innerHTML = '▶ Démarrer'; }
+        function updateSettings() { times.work = parseInt(document.getElementById('work-time').value); times.short = parseInt(document.getElementById('short-time').value); times.long = parseInt(document.getElementById('long-time').value); setMode(mode); }
+        function updateStats() { document.getElementById('pomodoros').textContent = stats.pomodoros; document.getElementById('total-time').textContent = stats.totalMinutes; document.getElementById('streak').textContent = stats.streak; }
+
+        if ('Notification' in window) Notification.requestPermission();
+        updateDisplay();
+        updateStats();
+    </script>
+</body>
+</html>
+

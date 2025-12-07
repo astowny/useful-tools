@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Decoder - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block">← Retour</a>
+        <h1 class="text-4xl font-bold mb-2">🎫 JWT Decoder</h1>
+        <p class="text-gray-400 mb-8">Décode et analyse les tokens JWT</p>
+
+        <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 mb-6">
+            <label class="block text-sm font-medium mb-2">Token JWT</label>
+            <textarea id="jwt" rows="4" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white font-mono text-sm focus:border-blue-500 focus:outline-none" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." oninput="decode()"></textarea>
+        </div>
+
+        <div id="error" class="hidden mb-6 bg-red-900/50 border border-red-500 rounded-xl p-4 text-red-300"></div>
+
+        <div id="result" class="hidden space-y-6">
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-slate-800 rounded-xl p-4 border border-red-500/50">
+                    <h3 class="text-sm font-medium text-red-400 mb-3">HEADER</h3>
+                    <pre id="header" class="text-sm font-mono text-gray-300 whitespace-pre-wrap"></pre>
+                </div>
+                <div class="bg-slate-800 rounded-xl p-4 border border-purple-500/50">
+                    <h3 class="text-sm font-medium text-purple-400 mb-3">PAYLOAD</h3>
+                    <pre id="payload" class="text-sm font-mono text-gray-300 whitespace-pre-wrap"></pre>
+                </div>
+                <div class="bg-slate-800 rounded-xl p-4 border border-blue-500/50">
+                    <h3 class="text-sm font-medium text-blue-400 mb-3">SIGNATURE</h3>
+                    <div id="signature" class="text-sm font-mono text-gray-300 break-all"></div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <h3 class="text-lg font-semibold mb-4">📊 Informations</h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="space-y-3">
+                        <div class="flex justify-between"><span class="text-gray-400">Algorithm</span><span id="info-alg" class="font-mono"></span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Type</span><span id="info-typ" class="font-mono"></span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Issuer (iss)</span><span id="info-iss" class="font-mono"></span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Subject (sub)</span><span id="info-sub" class="font-mono"></span></div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between"><span class="text-gray-400">Issued At (iat)</span><span id="info-iat"></span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Expires (exp)</span><span id="info-exp"></span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Not Before (nbf)</span><span id="info-nbf"></span></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Status</span>
+                            <span id="info-status" class="px-3 py-1 rounded-full text-sm font-medium"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <h3 class="text-lg font-semibold mb-4">🎨 Token coloré</h3>
+                <div id="colored" class="font-mono text-sm break-all p-4 bg-slate-700 rounded-lg"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function base64UrlDecode(str) {
+            str = str.replace(/-/g, '+').replace(/_/g, '/');
+            while (str.length % 4) str += '=';
+            return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return '-';
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleString('fr-FR');
+        }
+
+        function decode() {
+            const jwt = document.getElementById('jwt').value.trim();
+            const errorEl = document.getElementById('error');
+            const resultEl = document.getElementById('result');
+
+            if (!jwt) { errorEl.classList.add('hidden'); resultEl.classList.add('hidden'); return; }
+
+            try {
+                const parts = jwt.split('.');
+                if (parts.length !== 3) throw new Error('Format JWT invalide (3 parties attendues)');
+
+                const header = JSON.parse(base64UrlDecode(parts[0]));
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+
+                document.getElementById('header').textContent = JSON.stringify(header, null, 2);
+                document.getElementById('payload').textContent = JSON.stringify(payload, null, 2);
+                document.getElementById('signature').textContent = parts[2];
+
+                document.getElementById('info-alg').textContent = header.alg || '-';
+                document.getElementById('info-typ').textContent = header.typ || '-';
+                document.getElementById('info-iss').textContent = payload.iss || '-';
+                document.getElementById('info-sub').textContent = payload.sub || '-';
+                document.getElementById('info-iat').textContent = formatDate(payload.iat);
+                document.getElementById('info-exp').textContent = formatDate(payload.exp);
+                document.getElementById('info-nbf').textContent = formatDate(payload.nbf);
+
+                const now = Math.floor(Date.now() / 1000);
+                const statusEl = document.getElementById('info-status');
+                if (payload.exp && payload.exp < now) {
+                    statusEl.textContent = '❌ Expiré';
+                    statusEl.className = 'px-3 py-1 rounded-full text-sm font-medium bg-red-900 text-red-300';
+                } else if (payload.nbf && payload.nbf > now) {
+                    statusEl.textContent = '⏳ Pas encore valide';
+                    statusEl.className = 'px-3 py-1 rounded-full text-sm font-medium bg-yellow-900 text-yellow-300';
+                } else {
+                    statusEl.textContent = '✅ Valide';
+                    statusEl.className = 'px-3 py-1 rounded-full text-sm font-medium bg-green-900 text-green-300';
+                }
+
+                document.getElementById('colored').innerHTML = 
+                    `<span class="text-red-400">${parts[0]}</span>.<span class="text-purple-400">${parts[1]}</span>.<span class="text-blue-400">${parts[2]}</span>`;
+
+                errorEl.classList.add('hidden');
+                resultEl.classList.remove('hidden');
+            } catch (e) {
+                errorEl.textContent = '❌ ' + e.message;
+                errorEl.classList.remove('hidden');
+                resultEl.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
+

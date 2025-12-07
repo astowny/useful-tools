@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minifieur CSS/JS - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block">← Retour</a>
+        <h1 class="text-4xl font-bold mb-2">📦 Minifieur CSS/JS</h1>
+        <p class="text-gray-400 mb-8">Compresse votre code CSS ou JavaScript</p>
+
+        <div class="flex gap-2 mb-6">
+            <button onclick="setMode('css')" id="btn-css" class="flex-1 py-3 px-6 rounded-lg font-semibold transition-colors bg-blue-600">CSS</button>
+            <button onclick="setMode('js')" id="btn-js" class="flex-1 py-3 px-6 rounded-lg font-semibold transition-colors bg-slate-700 hover:bg-slate-600">JavaScript</button>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <label class="block text-sm font-medium mb-2">Code original</label>
+                <textarea id="input" rows="15" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white font-mono text-sm focus:border-blue-500 focus:outline-none" placeholder="Collez votre code ici..."></textarea>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <label class="block text-sm font-medium mb-2">Code minifié</label>
+                <textarea id="output" rows="15" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white font-mono text-sm" readonly></textarea>
+            </div>
+        </div>
+
+        <div class="flex gap-4 mt-6">
+            <button onclick="minify()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">⚡ Minifier</button>
+            <button onclick="copyResult()" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">📋 Copier</button>
+        </div>
+
+        <div id="stats" class="hidden mt-6 grid grid-cols-3 gap-4">
+            <div class="bg-slate-800 rounded-lg p-4 text-center border border-slate-700">
+                <div class="text-2xl font-bold text-gray-300" id="original-size">0</div>
+                <div class="text-sm text-gray-400">Taille originale</div>
+            </div>
+            <div class="bg-green-900/50 border border-green-500/30 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-green-400" id="minified-size">0</div>
+                <div class="text-sm text-gray-400">Taille minifiée</div>
+            </div>
+            <div class="bg-blue-900/50 border border-blue-500/30 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-blue-400" id="savings">0%</div>
+                <div class="text-sm text-gray-400">Économie</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mode = 'css';
+
+        function setMode(m) {
+            mode = m;
+            document.getElementById('btn-css').className = `flex-1 py-3 px-6 rounded-lg font-semibold transition-colors ${m === 'css' ? 'bg-blue-600' : 'bg-slate-700 hover:bg-slate-600'}`;
+            document.getElementById('btn-js').className = `flex-1 py-3 px-6 rounded-lg font-semibold transition-colors ${m === 'js' ? 'bg-blue-600' : 'bg-slate-700 hover:bg-slate-600'}`;
+        }
+
+        function minify() {
+            const input = document.getElementById('input').value;
+            let output = '';
+
+            if (mode === 'css') {
+                output = minifyCSS(input);
+            } else {
+                output = minifyJS(input);
+            }
+
+            document.getElementById('output').value = output;
+
+            // Stats
+            const originalSize = new Blob([input]).size;
+            const minifiedSize = new Blob([output]).size;
+            const savings = originalSize > 0 ? Math.round((1 - minifiedSize / originalSize) * 100) : 0;
+
+            document.getElementById('original-size').textContent = formatBytes(originalSize);
+            document.getElementById('minified-size').textContent = formatBytes(minifiedSize);
+            document.getElementById('savings').textContent = savings + '%';
+            document.getElementById('stats').classList.remove('hidden');
+        }
+
+        function minifyCSS(css) {
+            return css
+                .replace(/\/\*[\s\S]*?\*\//g, '') // Remove comments
+                .replace(/\s+/g, ' ') // Collapse whitespace
+                .replace(/\s*([{}:;,>~+])\s*/g, '$1') // Remove space around selectors
+                .replace(/;}/g, '}') // Remove last semicolon
+                .replace(/^\s+|\s+$/g, ''); // Trim
+        }
+
+        function minifyJS(js) {
+            return js
+                .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
+                .replace(/\/\/.*$/gm, '') // Remove line comments
+                .replace(/\s+/g, ' ') // Collapse whitespace
+                .replace(/\s*([{}();,:<>=+\-*/%&|!?])\s*/g, '$1') // Remove space around operators
+                .replace(/^\s+|\s+$/g, ''); // Trim
+        }
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function copyResult() {
+            navigator.clipboard.writeText(document.getElementById('output').value);
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Useful Tools - Boîte à outils en ligne</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧰</text></svg>">
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">🧰 Useful Tools</h1>
+            <p class="text-xl text-gray-400">Une collection d'outils gratuits en ligne</p>
+        </header>
+
+        <!-- Utilities -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><span class="text-3xl">🛠️</span> Utilitaires</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="utilities"></div>
+        </section>
+
+        <!-- Design -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><span class="text-3xl">🎨</span> Design</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="design"></div>
+        </section>
+
+        <!-- Productivity -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><span class="text-3xl">📊</span> Productivité</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="productivity"></div>
+        </section>
+
+        <!-- Security -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><span class="text-3xl">🔐</span> Crypto & Sécurité</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="security"></div>
+        </section>
+
+        <!-- Finance -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><span class="text-3xl">💰</span> Finance & Crypto</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="finance"></div>
+        </section>
+
+        <footer class="text-center text-gray-500 mt-12 pt-8 border-t border-gray-700">
+            <p>Made with ❤️ | 100% Client-side - Aucune donnée envoyée</p>
+        </footer>
+    </div>
+
+    <script>
+        const tools = {
+            utilities: [
+                { name: "Générateur QR Code", icon: "📱", desc: "Génère des QR codes", file: "qr-generator.html" },
+                { name: "JSON ↔ CSV", icon: "🔄", desc: "Convertit entre formats", file: "json-csv.html" },
+                { name: "Générateur de mots de passe", icon: "🔑", desc: "Mots de passe sécurisés", file: "password-generator.html" },
+                { name: "Base64 Encoder/Decoder", icon: "🔤", desc: "Encode/décode Base64", file: "base64.html" },
+                { name: "Diff de texte", icon: "📝", desc: "Compare deux textes", file: "text-diff.html" },
+                { name: "Minifieur CSS/JS", icon: "📦", desc: "Compresse le code", file: "minifier.html" }
+            ],
+            design: [
+                { name: "Générateur de palettes", icon: "🎨", desc: "Couleurs harmonieuses", file: "color-palette.html" },
+                { name: "Convertisseur couleurs", icon: "🌈", desc: "HEX ↔ RGB ↔ HSL", file: "color-converter.html" },
+                { name: "Générateur gradients", icon: "🌅", desc: "Dégradés CSS", file: "gradient-generator.html" },
+                { name: "Box-shadow Generator", icon: "🖼️", desc: "Ombres CSS visuelles", file: "box-shadow.html" },
+                { name: "Favicon Generator", icon: "⭐", desc: "Crée des favicons", file: "favicon-generator.html" }
+            ],
+            productivity: [
+                { name: "Pomodoro Timer", icon: "🍅", desc: "Timer productivité", file: "pomodoro.html" },
+                { name: "Calculateur Freelance", icon: "💼", desc: "TJM et charges", file: "freelance-calculator.html" },
+                { name: "Générateur de factures", icon: "🧾", desc: "Factures PDF", file: "invoice-generator.html" },
+                { name: "Kanban Board", icon: "📋", desc: "Gestion de tâches", file: "kanban.html" },
+                { name: "Markdown Editor", icon: "✍️", desc: "Éditeur Markdown live", file: "markdown-editor.html" }
+            ],
+            security: [
+                { name: "Hash Generator", icon: "🔒", desc: "MD5, SHA-256...", file: "hash-generator.html" },
+                { name: "JWT Decoder", icon: "🎫", desc: "Décode les tokens JWT", file: "jwt-decoder.html" }
+            ],
+            finance: [
+                { name: "Calculateur DCA", icon: "📈", desc: "Dollar Cost Averaging", file: "dca-calculator.html" },
+                { name: "Impermanent Loss", icon: "💸", desc: "Calcul IL DeFi", file: "impermanent-loss.html" }
+            ]
+        };
+
+        function renderTools(category, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = tools[category].map(t => `
+                <a href="tools/${t.file}" class="block p-6 bg-slate-800 rounded-xl border border-slate-700 hover:border-blue-500 hover:bg-slate-700 transition-all group">
+                    <div class="text-4xl mb-3">${t.icon}</div>
+                    <h3 class="text-lg font-semibold mb-1 group-hover:text-blue-400 transition-colors">${t.name}</h3>
+                    <p class="text-gray-400 text-sm">${t.desc}</p>
+                </a>
+            `).join('');
+        }
+
+        renderTools('utilities', 'utilities');
+        renderTools('design', 'design');
+        renderTools('productivity', 'productivity');
+        renderTools('security', 'security');
+        renderTools('finance', 'finance');
+    </script>
+</body>
+</html>
+
