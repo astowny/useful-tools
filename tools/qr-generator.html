@@ -19,7 +19,7 @@
                 <textarea id="input" rows="3" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none" placeholder="https://example.com"></textarea>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-2 gap-4 mb-4">
                 <div>
                     <label class="block text-sm font-medium mb-2">Taille</label>
                     <select id="size" class="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-white">
@@ -30,9 +30,25 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-2">Couleur</label>
-                    <input type="color" id="color" value="#ffffff" class="w-full h-12 bg-slate-700 border border-slate-600 rounded-lg cursor-pointer">
+                    <label class="block text-sm font-medium mb-2">Couleur QR</label>
+                    <input type="color" id="color" value="#000000" class="w-full h-12 bg-slate-700 border border-slate-600 rounded-lg cursor-pointer" oninput="checkContrast()">
                 </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Couleur fond</label>
+                    <input type="color" id="bg-color" value="#ffffff" class="w-full h-12 bg-slate-700 border border-slate-600 rounded-lg cursor-pointer" oninput="checkContrast()">
+                </div>
+                <div class="flex items-end">
+                    <div id="contrast-indicator" class="w-full h-12 rounded-lg flex items-center justify-center text-sm font-medium bg-green-600">
+                        ✓ Bon contraste
+                    </div>
+                </div>
+            </div>
+
+            <div id="contrast-warning" class="hidden mb-4 p-3 bg-yellow-900/50 border border-yellow-600 rounded-lg text-yellow-300 text-sm">
+                ⚠️ Contraste faible ! Certains scanners pourraient ne pas lire ce QR code.
             </div>
 
             <button onclick="generateQR()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors mb-6">
@@ -53,20 +69,75 @@
     <script>
         let qr = null;
 
+        // Convertit hex en RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        // Calcule la luminance relative (WCAG)
+        function getLuminance(r, g, b) {
+            const [rs, gs, bs] = [r, g, b].map(c => {
+                c = c / 255;
+                return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+            });
+            return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+        }
+
+        // Calcule le ratio de contraste (WCAG)
+        function getContrastRatio(color1, color2) {
+            const rgb1 = hexToRgb(color1);
+            const rgb2 = hexToRgb(color2);
+            const lum1 = getLuminance(rgb1.r, rgb1.g, rgb1.b);
+            const lum2 = getLuminance(rgb2.r, rgb2.g, rgb2.b);
+            const lighter = Math.max(lum1, lum2);
+            const darker = Math.min(lum1, lum2);
+            return (lighter + 0.05) / (darker + 0.05);
+        }
+
+        // Vérifie le contraste et affiche l'indicateur
+        function checkContrast() {
+            const fgColor = document.getElementById('color').value;
+            const bgColor = document.getElementById('bg-color').value;
+            const ratio = getContrastRatio(fgColor, bgColor);
+
+            const indicator = document.getElementById('contrast-indicator');
+            const warning = document.getElementById('contrast-warning');
+
+            if (ratio >= 4.5) {
+                indicator.className = 'w-full h-12 rounded-lg flex items-center justify-center text-sm font-medium bg-green-600';
+                indicator.textContent = '✓ Bon contraste (' + ratio.toFixed(1) + ':1)';
+                warning.classList.add('hidden');
+            } else if (ratio >= 3) {
+                indicator.className = 'w-full h-12 rounded-lg flex items-center justify-center text-sm font-medium bg-yellow-600';
+                indicator.textContent = '⚠ Contraste moyen (' + ratio.toFixed(1) + ':1)';
+                warning.classList.remove('hidden');
+            } else {
+                indicator.className = 'w-full h-12 rounded-lg flex items-center justify-center text-sm font-medium bg-red-600';
+                indicator.textContent = '✗ Contraste faible (' + ratio.toFixed(1) + ':1)';
+                warning.classList.remove('hidden');
+            }
+        }
+
         function generateQR() {
             const text = document.getElementById('input').value.trim();
             if (!text) return alert('Veuillez entrer du texte');
 
             const size = parseInt(document.getElementById('size').value);
-            const color = document.getElementById('color').value;
+            const fgColor = document.getElementById('color').value;
+            const bgColor = document.getElementById('bg-color').value;
             const canvas = document.getElementById('qrcode');
 
             qr = new QRious({
                 element: canvas,
                 value: text,
                 size: size,
-                foreground: color,
-                background: '#1e293b',
+                foreground: fgColor,
+                background: bgColor,
                 level: 'M'
             });
 
@@ -84,6 +155,9 @@
         document.getElementById('input').addEventListener('keydown', e => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); generateQR(); }
         });
+
+        // Vérifier le contraste au chargement
+        checkContrast();
     </script>
 </body>
 </html>
