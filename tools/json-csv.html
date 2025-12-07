@@ -47,6 +47,47 @@
             document.getElementById('input').placeholder = m === 'json2csv' ? '[{"name": "John", "age": 30}]' : 'name,age\nJohn,30';
         }
 
+        function escapeCSV(val) {
+            if (val === null || val === undefined) return '';
+            const str = String(val);
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (inQuotes) {
+                    if (char === '"') {
+                        if (line[i + 1] === '"') {
+                            current += '"';
+                            i++;
+                        } else {
+                            inQuotes = false;
+                        }
+                    } else {
+                        current += char;
+                    }
+                } else {
+                    if (char === '"') {
+                        inQuotes = true;
+                    } else if (char === ',') {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
         function convert() {
             const input = document.getElementById('input').value.trim();
             if (!input) return;
@@ -55,17 +96,14 @@
                     const json = JSON.parse(input);
                     if (!Array.isArray(json)) throw new Error('Le JSON doit être un tableau');
                     const headers = [...new Set(json.flatMap(obj => Object.keys(obj)))];
-                    const csv = [headers.join(','), ...json.map(obj => headers.map(h => {
-                        const val = obj[h] ?? '';
-                        return typeof val === 'string' && val.includes(',') ? `"${val}"` : val;
-                    }).join(','))].join('\n');
+                    const csv = [headers.join(','), ...json.map(obj => headers.map(h => escapeCSV(obj[h])).join(','))].join('\n');
                     document.getElementById('output').value = csv;
                 } else {
                     const lines = input.split('\n').filter(l => l.trim());
-                    const headers = lines[0].split(',').map(h => h.trim());
+                    const headers = parseCSVLine(lines[0]);
                     const json = lines.slice(1).map(line => {
-                        const values = line.split(',');
-                        return headers.reduce((obj, h, i) => ({ ...obj, [h]: values[i]?.trim() ?? '' }), {});
+                        const values = parseCSVLine(line);
+                        return headers.reduce((obj, h, i) => ({ ...obj, [h]: values[i] ?? '' }), {});
                     });
                     document.getElementById('output').value = JSON.stringify(json, null, 2);
                 }

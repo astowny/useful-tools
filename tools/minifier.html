@@ -91,12 +91,28 @@
         }
 
         function minifyJS(js) {
-            return js
-                .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
-                .replace(/\/\/.*$/gm, '') // Remove line comments
-                .replace(/\s+/g, ' ') // Collapse whitespace
-                .replace(/\s*([{}();,:<>=+\-*/%&|!?])\s*/g, '$1') // Remove space around operators
-                .replace(/^\s+|\s+$/g, ''); // Trim
+            // Remove block comments (but not inside strings)
+            let result = js.replace(/\/\*[\s\S]*?\*\//g, '');
+            // Remove line comments (but not inside strings)
+            result = result.replace(/\/\/.*$/gm, '');
+            // Collapse multiple whitespace to single space
+            result = result.replace(/\s+/g, ' ');
+            // Remove spaces around operators, but keep space after keywords
+            const keywords = ['return', 'throw', 'new', 'delete', 'typeof', 'void', 'else', 'case', 'break', 'continue', 'do', 'in', 'of', 'instanceof'];
+            // Replace spaces around operators carefully
+            result = result.replace(/\s*([{}();,:<>=+\-*\/%&|!?])\s*/g, (match, op) => {
+                return op;
+            });
+            // Restore space after keywords that need it
+            keywords.forEach(kw => {
+                const regex = new RegExp('\\b' + kw + '([^\\s;{}()\\[\\]])', 'g');
+                result = result.replace(regex, kw + ' $1');
+            });
+            // Restore space between keywords and operators where needed (e.g., "return-1" should stay "return -1")
+            result = result.replace(/\b(return|throw|case)([\-+])/g, '$1 $2');
+            // Trim
+            result = result.replace(/^\s+|\s+$/g, '');
+            return result;
         }
 
         function formatBytes(bytes) {
