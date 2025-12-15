@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de devis - Useful Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>@media print { .no-print { display: none !important; } body { background: white !important; } }</style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block no-print">← Retour</a>
+        <h1 class="text-4xl font-bold mb-2 no-print">📋 Générateur de devis</h1>
+        <p class="text-gray-400 mb-8 no-print">Créez des devis professionnels à partir de templates</p>
+
+        <!-- Template Selection -->
+        <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 no-print mb-6">
+            <h3 class="font-semibold mb-3">📁 Sélectionner un template</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="templates"></div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6 no-print mb-6">
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <h3 class="font-semibold mb-3">👤 Émetteur</h3>
+                <input type="text" id="from-name" placeholder="Votre nom/société" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
+                <input type="text" id="from-address" placeholder="Adresse" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
+                <input type="email" id="from-email" placeholder="Email" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
+                <input type="tel" id="from-phone" placeholder="Téléphone" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
+                <input type="text" id="from-siret" placeholder="SIRET" class="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm">
+            </div>
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <h3 class="font-semibold mb-3">🏢 Client</h3>
+                <input type="text" id="to-name" placeholder="Nom client" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
+                <input type="text" id="to-address" placeholder="Adresse client" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
+                <input type="email" id="to-email" placeholder="Email client" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
+                <input type="tel" id="to-phone" placeholder="Téléphone client" class="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm">
+            </div>
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <h3 class="font-semibold mb-3">📄 Devis</h3>
+                <input type="text" id="quote-num" placeholder="N° Devis" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
+                <input type="date" id="quote-date" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
+                <input type="date" id="valid-until" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
+                <select id="tva-rate" class="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm">
+                    <option value="0">TVA 0% (Non applicable)</option>
+                    <option value="5.5">TVA 5.5%</option>
+                    <option value="10">TVA 10%</option>
+                    <option value="20" selected>TVA 20%</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 no-print mb-6">
+            <h3 class="font-semibold mb-3">📝 Prestations</h3>
+            <div id="lines" class="space-y-2"></div>
+            <button onclick="addLine()" class="mt-3 text-blue-400 hover:text-blue-300 text-sm">+ Ajouter une prestation</button>
+        </div>
+
+        <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 no-print mb-6">
+            <h3 class="font-semibold mb-3">📌 Conditions</h3>
+            <textarea id="conditions" rows="3" placeholder="Conditions de paiement, délais, mentions légales..." class="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm"></textarea>
+        </div>
+
+        <div class="flex gap-4 no-print mb-8">
+            <button onclick="generateQuote()" class="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-semibold">👁 Prévisualiser</button>
+            <button onclick="saveTemplate()" class="flex-1 bg-purple-600 hover:bg-purple-700 py-3 rounded-lg font-semibold">💾 Sauvegarder template</button>
+            <button onclick="window.print()" class="flex-1 bg-green-600 hover:bg-green-700 py-3 rounded-lg font-semibold">🖨 Imprimer/PDF</button>
+        </div>
+
+        <!-- Quote Preview -->
+        <div id="quote-preview" class="hidden bg-white text-gray-800 rounded-xl p-8 print:block print:rounded-none print:p-0"></div>
+    </div>
+
+    <script>
+        let lines = [{ desc: '', qty: 1, unit: 'unité', price: 0 }];
+        const defaultTemplates = {
+            'dev-web': { name: '💻 Développement Web', lines: [
+                { desc: 'Conception et maquettes', qty: 1, unit: 'forfait', price: 500 },
+                { desc: 'Développement front-end', qty: 1, unit: 'jour', price: 450 },
+                { desc: 'Développement back-end', qty: 1, unit: 'jour', price: 500 },
+                { desc: 'Tests et recette', qty: 1, unit: 'forfait', price: 300 }
+            ], conditions: 'Acompte de 30% à la commande. Solde à la livraison.\nDélai de réalisation : selon planning convenu.' },
+            'design': { name: '🎨 Design Graphique', lines: [
+                { desc: 'Brief et recherches', qty: 1, unit: 'forfait', price: 200 },
+                { desc: 'Propositions graphiques', qty: 3, unit: 'proposition', price: 150 },
+                { desc: 'Retouches et ajustements', qty: 2, unit: 'révision', price: 100 },
+                { desc: 'Livraison fichiers sources', qty: 1, unit: 'forfait', price: 50 }
+            ], conditions: 'Acompte de 50% à la commande.\n3 propositions incluses, révisions supplémentaires facturées.' },
+            'consulting': { name: '📊 Consulting', lines: [
+                { desc: 'Audit initial', qty: 1, unit: 'jour', price: 800 },
+                { desc: 'Accompagnement stratégique', qty: 1, unit: 'jour', price: 750 },
+                { desc: 'Rapport et recommandations', qty: 1, unit: 'forfait', price: 500 }
+            ], conditions: 'Facturation mensuelle. Frais de déplacement en sus.' },
+            'formation': { name: '📚 Formation', lines: [
+                { desc: 'Préparation pédagogique', qty: 1, unit: 'forfait', price: 400 },
+                { desc: 'Animation formation', qty: 1, unit: 'jour', price: 900 },
+                { desc: 'Supports de cours', qty: 1, unit: 'forfait', price: 200 }
+            ], conditions: 'Formation intra-entreprise. Jusqu\'à 8 participants.' }
+        };
+
+        document.getElementById('quote-date').valueAsDate = new Date();
+        document.getElementById('valid-until').valueAsDate = new Date(Date.now() + 30*24*60*60*1000);
+        document.getElementById('quote-num').value = 'DEV-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*1000)).padStart(3, '0');
+
+        function getTemplates() {
+            const saved = JSON.parse(localStorage.getItem('quoteTemplates') || '{}');
+            return { ...defaultTemplates, ...saved };
+        }
+
+        function renderTemplates() {
+            const templates = getTemplates();
+            document.getElementById('templates').innerHTML = Object.entries(templates).map(([id, t]) => `
+                <button onclick="loadTemplate('${id}')" class="p-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-left border border-slate-600 hover:border-blue-500 transition-all">
+                    <div class="font-medium text-sm">${t.name}</div>
+                    <div class="text-xs text-gray-400">${t.lines.length} lignes</div>
+                </button>
+            `).join('') + `<button onclick="clearForm()" class="p-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-left border border-slate-600 hover:border-yellow-500 transition-all">
+                <div class="font-medium text-sm">📝 Vierge</div>
+                <div class="text-xs text-gray-400">Devis vide</div>
+            </button>`;
+        }
+
+        function loadTemplate(id) {
+            const templates = getTemplates();
+            const t = templates[id];
+            if (t) {
+                lines = JSON.parse(JSON.stringify(t.lines));
+                document.getElementById('conditions').value = t.conditions || '';
+                renderLines();
+            }
+        }
+
+        function clearForm() {
+            lines = [{ desc: '', qty: 1, unit: 'unité', price: 0 }];
+            document.getElementById('conditions').value = '';
+            renderLines();
+        }
+
+        function renderLines() {
+            document.getElementById('lines').innerHTML = lines.map((l, i) => `
+                <div class="flex gap-2 items-center">
+                    <input type="text" placeholder="Description" value="${l.desc}" class="flex-1 bg-slate-700 border border-slate-600 rounded p-2 text-sm" onchange="lines[${i}].desc=this.value">
+                    <input type="number" placeholder="Qté" value="${l.qty}" class="w-16 bg-slate-700 border border-slate-600 rounded p-2 text-sm text-center" onchange="lines[${i}].qty=parseFloat(this.value)||0">
+                    <select class="w-24 bg-slate-700 border border-slate-600 rounded p-2 text-sm" onchange="lines[${i}].unit=this.value">
+                        <option value="unité" ${l.unit==='unité'?'selected':''}>unité</option>
+                        <option value="jour" ${l.unit==='jour'?'selected':''}>jour</option>
+                        <option value="heure" ${l.unit==='heure'?'selected':''}>heure</option>
+                        <option value="forfait" ${l.unit==='forfait'?'selected':''}>forfait</option>
+                        <option value="mois" ${l.unit==='mois'?'selected':''}>mois</option>
+                    </select>
+                    <input type="number" placeholder="Prix" value="${l.price}" class="w-24 bg-slate-700 border border-slate-600 rounded p-2 text-sm text-right" onchange="lines[${i}].price=parseFloat(this.value)||0">
+                    ${lines.length > 1 ? `<button onclick="lines.splice(${i},1);renderLines()" class="text-red-400 px-2 hover:text-red-300">✕</button>` : '<div class="w-6"></div>'}
+                </div>
+            `).join('');
+        }
+
+        function addLine() { lines.push({ desc: '', qty: 1, unit: 'unité', price: 0 }); renderLines(); }
+
+        function saveTemplate() {
+            const name = prompt('Nom du template:');
+            if (!name) return;
+            const id = 'custom-' + Date.now();
+            const saved = JSON.parse(localStorage.getItem('quoteTemplates') || '{}');
+            saved[id] = { name: '⭐ ' + name, lines: JSON.parse(JSON.stringify(lines)), conditions: document.getElementById('conditions').value };
+            localStorage.setItem('quoteTemplates', JSON.stringify(saved));
+            renderTemplates();
+            alert('Template sauvegardé !');
+        }
+
+        function generateQuote() {
+            const tvaRate = parseFloat(document.getElementById('tva-rate').value) / 100;
+            let subtotal = 0;
+            const linesHtml = lines.filter(l => l.desc).map(l => {
+                const total = l.qty * l.price;
+                subtotal += total;
+                return `<tr class="border-b border-gray-100"><td class="py-3">${l.desc}</td><td class="text-center py-3">${l.qty}</td><td class="text-center py-3">${l.unit}</td><td class="text-right py-3">${l.price.toFixed(2)} €</td><td class="text-right py-3 font-medium">${total.toFixed(2)} €</td></tr>`;
+            }).join('');
+            const tva = subtotal * tvaRate;
+            const total = subtotal + tva;
+
+            document.getElementById('quote-preview').innerHTML = `
+                <div class="flex justify-between mb-8">
+                    <div>
+                        <h2 class="text-2xl font-bold text-blue-600">${document.getElementById('from-name').value || 'Votre société'}</h2>
+                        <p class="text-gray-600 text-sm">${document.getElementById('from-address').value}</p>
+                        <p class="text-gray-500 text-sm">${document.getElementById('from-email').value} ${document.getElementById('from-phone').value ? '• ' + document.getElementById('from-phone').value : ''}</p>
+                        ${document.getElementById('from-siret').value ? `<p class="text-gray-500 text-xs">SIRET: ${document.getElementById('from-siret').value}</p>` : ''}
+                    </div>
+                    <div class="text-right">
+                        <h1 class="text-3xl font-bold text-gray-800">DEVIS</h1>
+                        <p class="text-gray-600">${document.getElementById('quote-num').value}</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-8 mb-8">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-gray-500 text-sm mb-1 font-medium">Client</p>
+                        <p class="font-semibold text-lg">${document.getElementById('to-name').value || '-'}</p>
+                        <p class="text-gray-600 text-sm">${document.getElementById('to-address').value}</p>
+                        <p class="text-gray-500 text-sm">${document.getElementById('to-email').value} ${document.getElementById('to-phone').value ? '• ' + document.getElementById('to-phone').value : ''}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-gray-500 text-sm">Date: <span class="text-gray-800 font-medium">${document.getElementById('quote-date').value}</span></p>
+                        <p class="text-gray-500 text-sm">Valable jusqu'au: <span class="text-gray-800 font-medium">${document.getElementById('valid-until').value}</span></p>
+                    </div>
+                </div>
+                <table class="w-full mb-8">
+                    <thead><tr class="bg-gray-100"><th class="text-left py-3 px-2 rounded-l-lg">Description</th><th class="text-center py-3 px-2">Qté</th><th class="text-center py-3 px-2">Unité</th><th class="text-right py-3 px-2">Prix unit.</th><th class="text-right py-3 px-2 rounded-r-lg">Total HT</th></tr></thead>
+                    <tbody>${linesHtml}</tbody>
+                </table>
+                <div class="flex justify-end mb-8"><div class="w-72 bg-gray-50 rounded-lg p-4">
+                    <div class="flex justify-between py-1"><span class="text-gray-600">Total HT</span><span class="font-medium">${subtotal.toFixed(2)} €</span></div>
+                    <div class="flex justify-between py-1"><span class="text-gray-600">TVA (${(tvaRate*100).toFixed(1)}%)</span><span class="font-medium">${tva.toFixed(2)} €</span></div>
+                    <div class="flex justify-between py-2 border-t-2 border-gray-800 mt-2 font-bold text-xl"><span>Total TTC</span><span class="text-blue-600">${total.toFixed(2)} €</span></div>
+                </div></div>
+                ${document.getElementById('conditions').value ? `<div class="border-t border-gray-200 pt-4"><p class="text-gray-500 text-sm font-medium mb-2">Conditions</p><p class="text-gray-600 text-sm whitespace-pre-line">${document.getElementById('conditions').value}</p></div>` : ''}
+                <div class="mt-8 pt-4 border-t border-gray-200 grid grid-cols-2 gap-8">
+                    <div><p class="text-gray-500 text-sm mb-2">Bon pour accord - Date et signature client :</p><div class="h-20 border border-dashed border-gray-300 rounded"></div></div>
+                    <div class="text-right"><p class="text-gray-400 text-xs">${tvaRate === 0 ? 'TVA non applicable, art. 293 B du CGI' : ''}</p></div>
+                </div>
+            `;
+            document.getElementById('quote-preview').classList.remove('hidden');
+        }
+
+        renderTemplates();
+        renderLines();
+    </script>
+</body>
+</html>
+</body>
+</html>
+
