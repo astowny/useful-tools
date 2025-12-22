@@ -10,9 +10,9 @@
             .no-print { display: none !important; }
             body { background: white !important; }
         }
+        body.hide-print-headers { }
         @media print {
-            @page { margin: 0; }
-            body { margin: 1.5cm; }
+            body.hide-print-headers { margin: 1.5cm; }
         }
         .rich-editor { min-height: 60px; }
         .rich-editor:focus { outline: none; }
@@ -20,6 +20,7 @@
         .rich-toolbar button:hover { background: rgba(255,255,255,0.1); }
         .rich-toolbar button.active { background: rgba(59, 130, 246, 0.5); }
     </style>
+    <style id="print-style"></style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
     <div class="container mx-auto px-4 py-8 max-w-5xl">
@@ -85,6 +86,14 @@
             <div id="notes" contenteditable="true" class="rich-editor w-full bg-slate-700 border border-slate-600 rounded p-3 text-sm min-h-[80px]" placeholder="Notes, conditions de paiement, mentions légales..."></div>
         </div>
 
+        <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 no-print mb-6">
+            <h3 class="font-semibold mb-3">⚙️ Options d'impression</h3>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" id="hide-print-headers" checked class="rounded bg-slate-700 border-slate-600" onchange="togglePrintHeaders()">
+                <span>Masquer les en-têtes d'impression (date, URL, titre)</span>
+            </label>
+        </div>
+
         <div class="flex gap-4 no-print mb-8">
             <button onclick="generateInvoice()" class="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-semibold">👁 Prévisualiser</button>
             <button onclick="window.print()" class="flex-1 bg-green-600 hover:bg-green-700 py-3 rounded-lg font-semibold">🖨 Imprimer/PDF</button>
@@ -141,6 +150,18 @@
         document.getElementById('invoice-date').valueAsDate = new Date();
         document.getElementById('due-date').valueAsDate = new Date(Date.now() + 30*24*60*60*1000);
 
+        function togglePrintHeaders() {
+            const hide = document.getElementById('hide-print-headers').checked;
+            const style = document.getElementById('print-style');
+            if (hide) {
+                style.textContent = '@media print { @page { margin: 0; } body { margin: 1.5cm; } }';
+            } else {
+                style.textContent = '';
+            }
+        }
+        // Initialize on load
+        togglePrintHeaders();
+
         function formatText(cmd) {
             document.execCommand(cmd, false, null);
         }
@@ -150,15 +171,27 @@
             document.execCommand(cmd, false, null);
         }
 
+        function syncLines() {
+            const lineElements = document.querySelectorAll('#lines > div');
+            lineElements.forEach((el, i) => {
+                const descEl = el.querySelector('[contenteditable]');
+                const qtyEl = el.querySelector('input[placeholder="Qté"]');
+                const priceEl = el.querySelector('input[placeholder="Prix HT"]');
+                if (descEl) lines[i].desc = descEl.innerHTML;
+                if (qtyEl) lines[i].qty = parseFloat(qtyEl.value) || 0;
+                if (priceEl) lines[i].price = parseFloat(priceEl.value) || 0;
+            });
+        }
+
         function renderLines() {
             document.getElementById('lines').innerHTML = lines.map((l, i) => `
                 <div class="flex gap-2 items-start">
                     <div contenteditable="true"
                          class="rich-editor flex-1 bg-slate-700 border border-slate-600 rounded p-2 text-sm min-h-[40px]"
                          data-placeholder="Description (utilisez la barre d'outils pour formater)"
-                         onblur="lines[${i}].desc=this.innerHTML">${l.desc}</div>
-                    <input type="number" placeholder="Qté" value="${l.qty}" class="w-20 bg-slate-700 border border-slate-600 rounded p-2 text-sm text-center" onchange="lines[${i}].qty=parseFloat(this.value)||0">
-                    <input type="number" step="0.01" placeholder="Prix HT" value="${l.price}" class="w-28 bg-slate-700 border border-slate-600 rounded p-2 text-sm text-right" onchange="lines[${i}].price=parseFloat(this.value)||0">
+                         oninput="lines[${i}].desc=this.innerHTML">${l.desc}</div>
+                    <input type="number" placeholder="Qté" value="${l.qty}" class="w-20 bg-slate-700 border border-slate-600 rounded p-2 text-sm text-center" oninput="lines[${i}].qty=parseFloat(this.value)||0">
+                    <input type="number" step="0.01" placeholder="Prix HT" value="${l.price}" class="w-28 bg-slate-700 border border-slate-600 rounded p-2 text-sm text-right" oninput="lines[${i}].price=parseFloat(this.value)||0">
                     ${lines.length > 1 ? `<button onclick="lines.splice(${i},1);renderLines()" class="text-red-400 px-2 hover:text-red-300 mt-2">✕</button>` : '<div class="w-6"></div>'}
                 </div>
             `).join('');
@@ -167,6 +200,7 @@
         function addLine() { lines.push({ desc: '', qty: 1, price: 0 }); renderLines(); }
 
         function generateInvoice() {
+            syncLines();
             const tvaRate = parseFloat(document.getElementById('tva-rate').value) / 100;
 
             document.getElementById('preview-from-name').textContent = document.getElementById('from-name').value;
