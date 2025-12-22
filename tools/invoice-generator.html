@@ -5,39 +5,84 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Générateur de factures - Useful Tools</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>@media print { .no-print { display: none !important; } body { background: white !important; } }</style>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+        }
+        @media print {
+            @page { margin: 0; }
+            body { margin: 1.5cm; }
+        }
+        .rich-editor { min-height: 60px; }
+        .rich-editor:focus { outline: none; }
+        .rich-toolbar button { padding: 4px 8px; border-radius: 4px; }
+        .rich-toolbar button:hover { background: rgba(255,255,255,0.1); }
+        .rich-toolbar button.active { background: rgba(59, 130, 246, 0.5); }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
         <a href="../index.html" class="text-blue-400 hover:text-blue-300 mb-6 inline-block no-print">← Retour</a>
         <h1 class="text-4xl font-bold mb-2 no-print">🧾 Générateur de factures</h1>
         <p class="text-gray-400 mb-8 no-print">Créez des factures professionnelles</p>
 
-        <div class="grid md:grid-cols-3 gap-6 no-print mb-8">
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 no-print mb-6">
             <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
-                <h3 class="font-semibold mb-3">Émetteur</h3>
+                <h3 class="font-semibold mb-3">👤 Émetteur</h3>
                 <input type="text" id="from-name" placeholder="Votre nom/société" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
                 <input type="text" id="from-address" placeholder="Adresse" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
                 <input type="text" id="from-siret" placeholder="SIRET" class="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm">
             </div>
             <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
-                <h3 class="font-semibold mb-3">Client</h3>
+                <h3 class="font-semibold mb-3">🏢 Client</h3>
                 <input type="text" id="to-name" placeholder="Nom client" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
                 <input type="text" id="to-address" placeholder="Adresse client" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
                 <input type="text" id="to-siret" placeholder="SIRET client" class="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm">
             </div>
             <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
-                <h3 class="font-semibold mb-3">Facture</h3>
+                <h3 class="font-semibold mb-3">📄 Facture</h3>
                 <input type="text" id="invoice-num" placeholder="N° Facture" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
                 <input type="date" id="invoice-date" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
-                <input type="date" id="due-date" class="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm">
+                <input type="date" id="due-date" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm">
+                <select id="tva-rate" class="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm">
+                    <option value="0">TVA 0% (Non applicable)</option>
+                    <option value="5.5">TVA 5.5%</option>
+                    <option value="10">TVA 10%</option>
+                    <option value="20" selected>TVA 20%</option>
+                </select>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <h3 class="font-semibold mb-3">🏦 Coordonnées bancaires</h3>
+                <label class="flex items-center gap-2 mb-2 text-sm cursor-pointer">
+                    <input type="checkbox" id="show-bank" class="rounded bg-slate-700 border-slate-600">
+                    <span>Afficher sur la facture</span>
+                </label>
+                <input type="text" id="iban" placeholder="IBAN" class="w-full bg-slate-700 border border-slate-600 rounded p-2 mb-2 text-sm font-mono">
+                <input type="text" id="bic" placeholder="BIC" class="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm font-mono">
             </div>
         </div>
 
-        <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 no-print mb-8">
-            <h3 class="font-semibold mb-3">Lignes</h3>
-            <div id="lines" class="space-y-2"></div>
+        <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 no-print mb-6">
+            <h3 class="font-semibold mb-3">📝 Lignes de facturation</h3>
+            <div class="rich-toolbar flex gap-1 mb-3 text-sm text-gray-400">
+                <span class="mr-2">Formatage description:</span>
+                <button onclick="formatText('bold')" title="Gras"><b>G</b></button>
+                <button onclick="formatText('italic')" title="Italique"><i>I</i></button>
+                <button onclick="formatText('underline')" title="Souligné"><u>S</u></button>
+            </div>
+            <div id="lines" class="space-y-3"></div>
             <button onclick="addLine()" class="mt-3 text-blue-400 hover:text-blue-300 text-sm">+ Ajouter une ligne</button>
+        </div>
+
+        <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 no-print mb-6">
+            <h3 class="font-semibold mb-3">📌 Notes & Mentions</h3>
+            <div class="rich-toolbar flex gap-1 mb-2 text-sm text-gray-400">
+                <button onclick="formatNotes('bold')" title="Gras"><b>G</b></button>
+                <button onclick="formatNotes('italic')" title="Italique"><i>I</i></button>
+                <button onclick="formatNotes('underline')" title="Souligné"><u>S</u></button>
+            </div>
+            <div id="notes" contenteditable="true" class="rich-editor w-full bg-slate-700 border border-slate-600 rounded p-3 text-sm min-h-[80px]" placeholder="Notes, conditions de paiement, mentions légales..."></div>
         </div>
 
         <div class="flex gap-4 no-print mb-8">
@@ -48,23 +93,46 @@
         <!-- Invoice Preview -->
         <div id="invoice-preview" class="hidden bg-white text-gray-800 rounded-xl p-8 print:block print:rounded-none print:p-0">
             <div class="flex justify-between mb-8">
-                <div><h2 class="text-2xl font-bold text-blue-600" id="preview-from-name"></h2><p class="text-gray-600 text-sm" id="preview-from-address"></p><p class="text-gray-500 text-xs" id="preview-from-siret"></p></div>
-                <div class="text-right"><h1 class="text-3xl font-bold">FACTURE</h1><p class="text-gray-600" id="preview-invoice-num"></p></div>
+                <div>
+                    <h2 class="text-2xl font-bold text-blue-600" id="preview-from-name"></h2>
+                    <p class="text-gray-600 text-sm" id="preview-from-address"></p>
+                    <p class="text-gray-500 text-xs" id="preview-from-siret"></p>
+                </div>
+                <div class="text-right">
+                    <h1 class="text-3xl font-bold">FACTURE</h1>
+                    <p class="text-gray-600" id="preview-invoice-num"></p>
+                </div>
             </div>
             <div class="grid grid-cols-2 gap-8 mb-8">
-                <div><p class="text-gray-500 text-sm mb-1">Facturé à:</p><p class="font-semibold" id="preview-to-name"></p><p class="text-gray-600 text-sm" id="preview-to-address"></p><p class="text-gray-500 text-xs" id="preview-to-siret"></p></div>
-                <div class="text-right"><p class="text-gray-500 text-sm">Date: <span id="preview-date" class="text-gray-800"></span></p><p class="text-gray-500 text-sm">Échéance: <span id="preview-due" class="text-gray-800"></span></p></div>
+                <div>
+                    <p class="text-gray-500 text-sm mb-1">Facturé à:</p>
+                    <p class="font-semibold" id="preview-to-name"></p>
+                    <p class="text-gray-600 text-sm" id="preview-to-address"></p>
+                    <p class="text-gray-500 text-xs" id="preview-to-siret"></p>
+                </div>
+                <div class="text-right">
+                    <p class="text-gray-500 text-sm">Date: <span id="preview-date" class="text-gray-800"></span></p>
+                    <p class="text-gray-500 text-sm">Échéance: <span id="preview-due" class="text-gray-800"></span></p>
+                </div>
             </div>
             <table class="w-full mb-8">
                 <thead><tr class="border-b-2 border-gray-200"><th class="text-left py-2">Description</th><th class="text-right py-2">Qté</th><th class="text-right py-2">Prix HT</th><th class="text-right py-2">Total HT</th></tr></thead>
                 <tbody id="preview-lines"></tbody>
             </table>
-            <div class="flex justify-end"><div class="w-64">
-                <div class="flex justify-between py-2"><span>Total HT</span><span id="preview-subtotal"></span></div>
-                <div class="flex justify-between py-2"><span>TVA (20%)</span><span id="preview-tax"></span></div>
-                <div class="flex justify-between py-2 border-t-2 border-gray-800 font-bold text-lg"><span>Total TTC</span><span id="preview-total"></span></div>
-            </div></div>
-            <p class="text-gray-500 text-xs mt-8 text-center">TVA non applicable, art. 293 B du CGI (si micro-entreprise)</p>
+            <div class="flex justify-end">
+                <div class="w-72">
+                    <div class="flex justify-between py-2"><span>Total HT</span><span id="preview-subtotal"></span></div>
+                    <div class="flex justify-between py-2" id="preview-tax-row"><span id="preview-tax-label">TVA (20%)</span><span id="preview-tax"></span></div>
+                    <div class="flex justify-between py-2 border-t-2 border-gray-800 font-bold text-lg"><span>Total TTC</span><span id="preview-total"></span></div>
+                </div>
+            </div>
+            <div id="preview-bank" class="hidden mt-6 p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-600 text-sm font-semibold mb-2">Coordonnées bancaires</p>
+                <p class="text-gray-700 text-sm font-mono">IBAN: <span id="preview-iban"></span></p>
+                <p class="text-gray-700 text-sm font-mono">BIC: <span id="preview-bic"></span></p>
+            </div>
+            <div id="preview-notes" class="mt-6 pt-4 border-t border-gray-200 text-gray-600 text-sm"></div>
+            <p id="preview-tva-mention" class="text-gray-500 text-xs mt-8 text-center"></p>
         </div>
     </div>
 
@@ -73,13 +141,25 @@
         document.getElementById('invoice-date').valueAsDate = new Date();
         document.getElementById('due-date').valueAsDate = new Date(Date.now() + 30*24*60*60*1000);
 
+        function formatText(cmd) {
+            document.execCommand(cmd, false, null);
+        }
+
+        function formatNotes(cmd) {
+            document.getElementById('notes').focus();
+            document.execCommand(cmd, false, null);
+        }
+
         function renderLines() {
             document.getElementById('lines').innerHTML = lines.map((l, i) => `
-                <div class="flex gap-2">
-                    <input type="text" placeholder="Description" value="${l.desc}" class="flex-1 bg-slate-700 border border-slate-600 rounded p-2 text-sm" onchange="lines[${i}].desc=this.value">
+                <div class="flex gap-2 items-start">
+                    <div contenteditable="true"
+                         class="rich-editor flex-1 bg-slate-700 border border-slate-600 rounded p-2 text-sm min-h-[40px]"
+                         data-placeholder="Description (utilisez la barre d'outils pour formater)"
+                         onblur="lines[${i}].desc=this.innerHTML">${l.desc}</div>
                     <input type="number" placeholder="Qté" value="${l.qty}" class="w-20 bg-slate-700 border border-slate-600 rounded p-2 text-sm text-center" onchange="lines[${i}].qty=parseFloat(this.value)||0">
-                    <input type="number" placeholder="Prix" value="${l.price}" class="w-28 bg-slate-700 border border-slate-600 rounded p-2 text-sm text-right" onchange="lines[${i}].price=parseFloat(this.value)||0">
-                    ${lines.length > 1 ? `<button onclick="lines.splice(${i},1);renderLines()" class="text-red-400 px-2">✕</button>` : ''}
+                    <input type="number" step="0.01" placeholder="Prix HT" value="${l.price}" class="w-28 bg-slate-700 border border-slate-600 rounded p-2 text-sm text-right" onchange="lines[${i}].price=parseFloat(this.value)||0">
+                    ${lines.length > 1 ? `<button onclick="lines.splice(${i},1);renderLines()" class="text-red-400 px-2 hover:text-red-300 mt-2">✕</button>` : '<div class="w-6"></div>'}
                 </div>
             `).join('');
         }
@@ -87,6 +167,8 @@
         function addLine() { lines.push({ desc: '', qty: 1, price: 0 }); renderLines(); }
 
         function generateInvoice() {
+            const tvaRate = parseFloat(document.getElementById('tva-rate').value) / 100;
+
             document.getElementById('preview-from-name').textContent = document.getElementById('from-name').value;
             document.getElementById('preview-from-address').textContent = document.getElementById('from-address').value;
             document.getElementById('preview-from-siret').textContent = document.getElementById('from-siret').value ? 'SIRET: ' + document.getElementById('from-siret').value : '';
@@ -97,17 +179,52 @@
             document.getElementById('preview-date').textContent = document.getElementById('invoice-date').value;
             document.getElementById('preview-due').textContent = document.getElementById('due-date').value;
 
+            // Bank details
+            const showBank = document.getElementById('show-bank').checked;
+            const iban = document.getElementById('iban').value;
+            const bic = document.getElementById('bic').value;
+            if (showBank && (iban || bic)) {
+                document.getElementById('preview-bank').classList.remove('hidden');
+                document.getElementById('preview-iban').textContent = iban;
+                document.getElementById('preview-bic').textContent = bic;
+            } else {
+                document.getElementById('preview-bank').classList.add('hidden');
+            }
+
+            // Notes
+            const notes = document.getElementById('notes').innerHTML;
+            const notesPreview = document.getElementById('preview-notes');
+            if (notes && notes.trim() !== '' && notes !== '<br>') {
+                notesPreview.innerHTML = '<p class="font-semibold text-gray-700 mb-2">Notes</p>' + notes;
+                notesPreview.classList.remove('hidden');
+            } else {
+                notesPreview.classList.add('hidden');
+            }
+
+            // Lines
             let subtotal = 0;
-            document.getElementById('preview-lines').innerHTML = lines.filter(l => l.desc).map(l => {
+            document.getElementById('preview-lines').innerHTML = lines.filter(l => l.desc && l.desc.trim() !== '' && l.desc !== '<br>').map(l => {
                 const total = l.qty * l.price;
                 subtotal += total;
-                return `<tr class="border-b border-gray-100"><td class="py-2">${l.desc}</td><td class="text-right py-2">${l.qty}</td><td class="text-right py-2">${l.price.toFixed(2)}€</td><td class="text-right py-2">${total.toFixed(2)}€</td></tr>`;
+                return `<tr class="border-b border-gray-100"><td class="py-2">${l.desc}</td><td class="text-right py-2">${l.qty}</td><td class="text-right py-2">${l.price.toFixed(2)} €</td><td class="text-right py-2">${total.toFixed(2)} €</td></tr>`;
             }).join('');
 
-            const tax = subtotal * 0.20;
-            document.getElementById('preview-subtotal').textContent = subtotal.toFixed(2) + '€';
-            document.getElementById('preview-tax').textContent = tax.toFixed(2) + '€';
-            document.getElementById('preview-total').textContent = (subtotal + tax).toFixed(2) + '€';
+            // TVA calculation
+            const tax = subtotal * tvaRate;
+            document.getElementById('preview-subtotal').textContent = subtotal.toFixed(2) + ' €';
+
+            if (tvaRate === 0) {
+                document.getElementById('preview-tax-row').classList.add('hidden');
+                document.getElementById('preview-total').textContent = subtotal.toFixed(2) + ' €';
+                document.getElementById('preview-tva-mention').textContent = 'TVA non applicable, art. 293 B du CGI';
+            } else {
+                document.getElementById('preview-tax-row').classList.remove('hidden');
+                document.getElementById('preview-tax-label').textContent = `TVA (${(tvaRate*100).toFixed(1)}%)`;
+                document.getElementById('preview-tax').textContent = tax.toFixed(2) + ' €';
+                document.getElementById('preview-total').textContent = (subtotal + tax).toFixed(2) + ' €';
+                document.getElementById('preview-tva-mention').textContent = '';
+            }
+
             document.getElementById('invoice-preview').classList.remove('hidden');
         }
 
