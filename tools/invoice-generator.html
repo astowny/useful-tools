@@ -96,7 +96,7 @@
 
         <div class="flex gap-4 no-print mb-8">
             <button onclick="generateInvoice()" class="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-semibold">👁 Prévisualiser</button>
-            <button onclick="window.print()" class="flex-1 bg-green-600 hover:bg-green-700 py-3 rounded-lg font-semibold">🖨 Imprimer/PDF</button>
+            <button onclick="generateInvoice(); setTimeout(() => window.print(), 100)" class="flex-1 bg-green-600 hover:bg-green-700 py-3 rounded-lg font-semibold">🖨 Imprimer/PDF</button>
         </div>
 
         <!-- Invoice Preview -->
